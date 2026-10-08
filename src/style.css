@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Fondo oscuro base para la estética analítica */
+@theme {
+  --color-bg-dark: #0f1115;
+  --color-text-light: #e2e8f0;
+}
+
+body {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
+  margin: 0;
+  overflow: hidden;
+}

@@ -1,0 +1,47 @@
+# ==============================================================================
+# L-SEA: GIT IGNORE CONFIGURATION
+# ==============================================================================
+
+# 1. Dependencias de Node.js
+node_modules/
+.pnp
+.pnp.js
+
+# 2. Archivos de compilación de producción (Vite / Vue)
+dist/
+dist-ssr/
+*.local
+
+# 3. Datos temporales de Vercel CLI
+.vercel/
+
+# 4. Archivos pesados de Rust / Tauri (¡Crítico! La carpeta target pesa gigas)
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# 5. Archivos pesados de la NASA (LOLA DEM crudo de 145 MB)
+# GitHub rechaza cualquier archivo mayor de 100 MB
+ldem_80s_80m.img
+*.img
+
+# 6. Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+
+# 7. Variables de entorno secretas (API keys, etc.)
+.env
+.env.*
+!.env.example
+
+# 8. Archivos basura de sistemas operativos y editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
