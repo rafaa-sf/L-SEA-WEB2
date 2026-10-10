@@ -19,57 +19,46 @@ Engineered with raw satellite altimetry from the **NASA Lunar Reconnaissance Orb
 
 ---
 
-## 🔬 Core Aerospace Subsystems & Capabilities
+## 🚀 Comprehensive Feature Set
 
-### 1. 🪐 Topocentric Astrodynamics (Jean Meeus ELP-2000/82)
-* **Ephemeris Engine:** Pure JavaScript implementation of truncated ELP-2000/82 lunar theory and VSOP87 solar coordinates with sub-arcsecond accuracy.
-* **IAU Lunar Orientation:** True inertial-to-body frame coordinate transformations (ICRF to Selenographic PA421).
-* **Libration & DTE Tracking:** Predicts lunar optical/physical libration oscillations (±6.7°) to forecast **Direct-to-Earth (DTE)** radio line-of-sight and communication blackouts (Loss of Signal - LOS).
+### 📊 Module 1: Mission Planner & Analytics Dashboard
+* **Autonomous Site Selection (Autopilot):** Scans 4,000,000 topographic data points using Non-Maximum Suppression (NMS) to extract the Top 5 safest landing plateaus.
+* **Vehicle Presets:** Pre-loaded flight profiles for **Nova-C (Intuitive Machines)**, **Griffin/VIPER (Astrobotic)**, **HAKUTO-R (ispace)**, and **Starship HLS (SpaceX)**, automatically adjusting slope tolerances, mast heights, and EPS power loads.
+* **Surface Survival Gantt Chart:** Interactive timeline displaying day-by-day solar illumination cycles and Direct-to-Earth (DTE) communication windows.
+* **"Seek Active DTE" Auto-Forward:** Automatically fast-forwards the mission calendar to the next available Earth line-of-sight window based on lunar libration cycles.
+* **Side-by-Side Trade Study Comparator:** Select any two candidate sites to generate a comparative matrix (GNC clearance, thermal stability, ice proximity) with an autonomous algorithmic recommendation.
+* **JSON Dossier Export:** Generates and downloads a formal NASA-style Mission Briefing file containing all calculated telemetry, ephemerides, and candidate coordinates.
 
-### 2. 🚀 GNC Terminal Descent Corridor (Glideslope Audit)
-* **Approach Obstacle Clearance:** Verifies trajectory clearance along a **12° terminal glideslope** over the final 20 km of powered descent.
-* **Anti-Cliff Safety Footprint Buffer:** Eliminates solitary pixel anomalies by enforcing an adjustable circular landing ellipse (320 m to 640 m) where the maximum allowable slope must remain below vehicle rollover thresholds.
+### 🌐 Module 2: 3D Surface Inspection & GIS
+* **320 km Regional 3D Rendering:** High-performance WebGL rendering of the South Polar Basin (Shackleton, Malapert, Faustini, Shoemaker, Haworth) at 60 FPS.
+* **Click-to-Probe Interactive Tool:** Click anywhere on the 3D terrain to deploy a virtual surveyor probe. Instantly retrieves local elevation, exact slope, touchdown safety classification, and Diviner surface temperature for that specific pixel.
+* **MET (Mission Elapsed Time) Simulator:** Play/Pause playback controls with adjustable time rates (**1x, 60x, 3600x**) to watch dynamic shadows, solar rotation, and Earthshine evolve in real-time.
+* **NASA GIS Scientific Overlays:** Switch seamlessly between 4 procedural textures:
+  1. **Natural Regolith (PBR):** Photorealistic shading with ACES Filmic tone mapping.
+  2. **Elevation Heatmap:** Hypsometric tinting from -4,000m (Navy) to +4,000m (Crimson/White).
+  3. **Slope Hazard Map:** Touchdown safety gradient (Green = Safe, Yellow = Caution, Red = Rollover Hazard).
+  4. **Cumulative Illumination:** Highlights Permanently Shadowed Regions (PSRs / Ice Traps) and Peaks of Eternal Light (PELs).
+* **Optical Controls:** Live sliders for Global Exposure (Gamma) and Earthshine (Shadow Fill Light) to inspect deep craters.
 
-### 3. 🌡️ NASA Diviner Surface Thermal Radiative Model
-* **Thermal Equilibrium Forecasting:** Solves the Stefan-Boltzmann radiative balance equation using empirical parameters from the **NASA Diviner Lunar Radiometer Experiment** (Albedo = 0.12, Emissivity = 0.95).
-* Predicts surface temperatures ranging from **40 K (-233°C in cryogenic PSRs)** to **380 K (+107°C in illuminated highland plateaus)**.
+### 🛡️ Module 3: Autonomous GNC & Safety Algorithms
+* **Anti-Cliff Safety Footprint:** Evaluates a 320m - 640m circular buffer around every pixel to ensure the entire landing ellipse is free of steep drop-offs or solitary pixel anomalies.
+* **GNC Terminal Glideslope Audit:** Projects a 12° descent corridor backwards for 20 km, verifying that no mountain ridges intersect the vehicle's trajectory during the hypersonic braking phase.
+* **3D Approach Vector Rendering:** Visually plots the golden glideslope trajectory and approach gates directly onto the 3D terrain.
+* **VIPER Rover Traverse Pathing:** Calculates and renders a 3D cyan navigation route from the landing site down into the nearest Permanently Shadowed Region (PSR) for volatile ice sampling.
 
-### 4. 🗺️ NASA Planetary GIS Overlays (320 km Regional Grid)
-* **Natural Regolith (PBR):** Real-time physically based shading with dynamic shadows and secondary Earthshine fill illumination.
-* **Elevation Heatmap (Hypsometric Tint):** Color gradient ranging from deep crater floors (-4,000 m, Navy) to elevated massifs (+4,000 m, Crimson/White).
-* **Slope Hazard Map:** Real-time touchdown classification: Green (<5°, Safe), Yellow (5°-8°, Caution), and Red (>10°, Rollover Hazard).
-* **Cumulative Illumination (PSR & PEL Finder):** Highlights **Permanently Shadowed Regions (PSRs)** containing volatile water ice deposits and **Peaks of Eternal Light (PELs)** for solar power architecture.
-
-### 5. 📡 360° Polar Horizon Skyline Radar
-* Evaluates real-time mountain topography occlusion using radial raymarching across 360 degrees of azimuth.
-* Renders an interactive polar radar display with true Sun and Earth positions relative to the surrounding mountain silhouette.
-
-### 6. ⚡ Multi-Threaded Processing (Web Workers)
-* Decouples the 4,000,000-pixel digital elevation model (DEM) tensor calculations from the UI rendering thread.
-* Features a real-time telemetry progress bar allowing the Three.js 3D viewport to maintain a steady **60 FPS** during heavy spatial analysis.
-
----
-
-## 🚀 Supported Flight Vehicle Presets
-
-| Vehicle Preset | Mission Profile | Mast Height | Solar Array | Base Load | Slope Tolerance |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Intuitive Machines Nova-C** | NASA CLPS-1 Commercial Lander | 3.0 m | 2.5 m² | 120 W | ≤ 8° |
-| **Astrobotic Griffin / VIPER** | NASA Volatiles Investigating Rover | 2.0 m | 3.8 m² | 210 W | ≤ 12° |
-| **ispace HAKUTO-R M1** | Commercial Lunar Exploration | 1.6 m | 1.2 m² | 85 W | ≤ 6° |
-| **SpaceX Starship HLS** | NASA Artemis III Human Landing System | 16.0 m | 25.0 m² | 1,800 W | ≤ 10° |
+### 🪐 Module 4: Astrodynamics & Space Environment
+* **Meeus ELP-2000/82 Ephemeris Engine:** Calculates sub-arcsecond Sun and Earth topocentric vectors.
+* **360° Polar Horizon Skyline Radar:** A live circular HUD that raymarches the surrounding topography to draw the mountain silhouette, plotting the Sun and Earth to predict physical occlusions.
+* **Diviner Thermal Radiative Model:** Solves the Stefan-Boltzmann equation to predict regolith temperatures ranging from 40 K (Cryogenic) to 380 K (Thermal Stress) based on local slope orientation.
+* **Deep Space Network (DSN) 24h Handover:** Tracks Earth's rotation to display which NASA DSN station (Madrid, Goldstone, or Canberra) currently holds the active X-Band radio link.
+* **TRN Optical Feasibility:** Evaluates solar elevation to determine if Terrain Relative Navigation cameras will have enough shadow contrast to guide the lander.
 
 ---
 
-## 🛠️ Technology Stack
-
-* **Frontend Framework:** Vue 3 (Composition API)
-* **Styling & HUD Design:** Tailwind CSS v4 (Glassmorphism MOC Theme)
-* **3D Visualization:** Three.js (WebGL, Custom BufferGeometry, ACES Filmic Tone Mapping)
-* **Astrodynamics Core:** Vanilla JavaScript (ELP-2000/82, IAU Libration, Meeus Matrix Algorithms)
-* **Multithreading:** Dedicated Native Web Worker (autopilot.worker.js)
-* **Native Desktop Shell:** Tauri (Rust-backed ultra-lightweight desktop packager)
-* **Deployment Target:** Vercel / Static Jamstack
+## ⚡ Architecture & Performance
+* **Zero-Latency Multithreading:** Heavy tensor calculations (slope derivation, footprint auditing, NMS) are offloaded to a dedicated **Native Web Worker**, keeping the UI and 3D viewport completely fluid.
+* **In-Memory Blob Worker:** The background thread is compiled inline, ensuring 100% compatibility with strict bundlers (Vite) and preventing module resolution crashes.
+* **Cross-Platform Ready:** Designed to be deployed as a static web app (Vercel/GitHub Pages) or compiled into a lightweight (~15 MB) native desktop executable via **Tauri (Rust)** for offline clean-room environments.
 
 ---
 
@@ -125,12 +114,11 @@ l-sea/
 │   │   └── terrain.js               # Dynamic 3D topographic mesh builder
 │   ├── core/
 │   │   ├── astro.js                 # Meeus ELP-2000/82 ephemeris & IAU rotation
-│   │   ├── autopilot.worker.js      # Background multithreaded audit worker
 │   │   ├── engine.js                # Horizon raytracing & slope tensor math
 │   │   ├── nasa_suite.js            # Diviner thermal, GNC corridor & TRN models
 │   │   ├── power.js                 # EPS solar generation & DSN telemetry
 │   │   └── windows.js               # Autopilot NMS site extraction algorithms
-│   ├── App.vue                      # MOC Flight Dashboard & Surface Inspector
+│   ├── App.vue                      # MOC Flight Dashboard & Surface Inspector (All-in-One)
 │   ├── main.js                      # Vue entrypoint
 │   └── style.css                    # Global theme styling
 ├── descargar_lola.py                # NASA PDS extraction & resampling script
