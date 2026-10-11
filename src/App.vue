@@ -4,68 +4,150 @@
   <div class="w-screen h-screen bg-[#07090e] text-slate-200 font-sans flex flex-col overflow-hidden">
     
     <!-- TOP NAVIGATION BAR -->
-    <header class="h-14 border-b border-white/10 bg-[#0c1017] px-6 flex justify-between items-center z-20">
-      <div class="flex items-center gap-3">
-        <div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500 animate-pulse"></div>
-        <h1 class="text-sm font-bold tracking-widest text-white uppercase font-mono">L-SEA <span class="text-blue-400">MISSION OPERATIONS CENTER</span></h1>
-        <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest font-mono">NASA Space Apps 2026</span>
+    <header class="h-14 border-b border-white/10 bg-[#0c1017] px-6 flex justify-between items-center z-20 shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500 animate-pulse"></div>
+          <h1 class="text-xs font-bold tracking-widest text-white uppercase font-mono">L-SEA <span class="text-blue-400">MISSION OPERATIONS CENTER</span></h1>
+          <span class="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest font-mono">NASA Space Apps 2026</span>
+        </div>
+
+        <!-- POI DROPDOWN CON BUSCADOR -->
+        <div class="relative">
+          <button 
+            @click.stop="poiMenuAbierto = !poiMenuAbierto" 
+            :class="poiMenuAbierto ? 'bg-blue-600/20 text-blue-300 border-blue-500/40' : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'"
+            class="border px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
+            title="Puntos de interés en el polo sur lunar">
+            <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+            <span>Explorar POIs ({{ poisLegend.length }})</span>
+            <svg class="w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0" :class="{ 'rotate-180': poiMenuAbierto }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- DESPLEGABLE POI -->
+          <div 
+            v-if="poiMenuAbierto" 
+            @click.stop 
+            class="absolute left-0 mt-2 w-96 max-h-[30rem] bg-[#0c1017] border border-white/15 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden backdrop-blur-md">
+            
+            <div class="p-3 border-b border-white/10 bg-[#0f141f]">
+              <div class="relative">
+                <input 
+                  type="text" 
+                  v-model="busquedaPOI" 
+                  placeholder="Buscar cráter, monte o sitio..." 
+                  class="w-full bg-black/50 border border-white/10 rounded-lg pl-8 pr-7 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <button 
+                  v-if="busquedaPOI" 
+                  @click="busquedaPOI = ''" 
+                  class="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs cursor-pointer">
+                  ✕
+                </button>
+              </div>
+
+              <!-- Pestañas de categoría -->
+              <div class="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-hide text-xs">
+                <button 
+                  @click="filtroTipoPOI = 'todos'" 
+                  :class="filtroTipoPOI === 'todos' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+                  class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shrink-0">
+                  Todos
+                </button>
+                <button 
+                  @click="filtroTipoPOI = 'psr'" 
+                  :class="filtroTipoPOI === 'psr' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+                  class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shrink-0">
+                  Cráteres PSR
+                </button>
+                <button 
+                  @click="filtroTipoPOI = 'mount'" 
+                  :class="filtroTipoPOI === 'mount' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+                  class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shrink-0">
+                  Montes
+                </button>
+                <button 
+                  @click="filtroTipoPOI = 'clps'" 
+                  :class="filtroTipoPOI === 'clps' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+                  class="px-2.5 py-1 rounded text-xs transition-colors cursor-pointer shrink-0">
+                  CLPS / Artemis
+                </button>
+              </div>
+            </div>
+
+            <!-- Listado con scroll -->
+            <div class="overflow-y-auto max-h-72 p-2 divide-y divide-white/5">
+              <div v-if="poisFiltrados.length === 0" class="p-4 text-center text-xs text-slate-400">
+                No se encontraron puntos coincidentes.
+              </div>
+              <button 
+                v-for="poi in poisFiltrados" 
+                :key="poi.nombre" 
+                @click="seleccionarPOI(poi)"
+                class="w-full text-left p-2.5 hover:bg-white/5 rounded-lg transition-colors flex items-start justify-between gap-3 cursor-pointer group">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-200 group-hover:text-blue-400 truncate">{{ poi.nombre }}</span>
+                    <span 
+                      :class="[
+                        'text-xs px-1.5 py-0.5 rounded border font-mono shrink-0',
+                        poi.tipo === 'psr' ? 'border-cyan-500/30 text-cyan-300 bg-cyan-950/20' :
+                        poi.tipo === 'mount' ? 'border-amber-500/30 text-amber-300 bg-amber-950/20' :
+                        poi.tipo === 'clps' ? 'border-indigo-500/30 text-indigo-300 bg-indigo-950/20' :
+                        'border-slate-500/30 text-slate-300 bg-slate-900/20'
+                      ]">
+                      {{ poi.tipo.toUpperCase() }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-1 line-clamp-1">{{ poi.desc }}</p>
+                </div>
+                <span class="text-xs font-mono text-slate-400 shrink-0 text-right mt-0.5">
+                  {{ poi.lat.toFixed(1) }}°, {{ poi.lon.toFixed(1) }}°
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="flex items-center gap-3">
         <button 
           @click="exportMissionBrief" 
-          class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer">
-          📄 Export Mission Brief
+          class="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export Mission Brief
         </button>
 
         <nav class="flex gap-2">
           <button 
             @click="activeTab = 'planner'"
-            :class="activeTab === 'planner' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'"
-            class="px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer">
-            📊 Mission Planner
+            :class="activeTab === 'planner' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+            class="px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Mission Planner
           </button>
           <button 
             @click="activeTab = 'viewer3d'"
-            :class="activeTab === 'viewer3d' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'"
-            class="px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer">
-            🌐 3D Surface Inspection
+            :class="activeTab === 'viewer3d' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+            class="px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            3D Surface Inspection
           </button>
         </nav>
       </div>
     </header>
-
-    <!-- POI LEGEND BAR (top, clickable navigation) -->
-    <div v-if="leyendaVisible" class="bg-[#0c1017] border-b border-white/10 px-4 py-2 z-30 pointer-events-auto">
-      <div class="flex items-center gap-3 overflow-x-auto scrollbar-hide" @click.stop @pointerdown.stop>
-        <button @click.stop="leyendaVisible = false" class="flex-shrink-0 text-gray-400 hover:text-white text-xs px-2 py-1" title="Ocultar leyenda">✕</button>
-        <span class="flex-shrink-0 text-[10px] text-gray-500 uppercase font-bold tracking-wider">POI NAVIGATION</span>
-        <div class="flex flex-wrap gap-1.5">
-          <template v-for="poi in leyendaFiltrada" :key="poi.nombre">
-            <button
-              @click.stop="navegarAPOI(poi)"
-              :class="[
-                'px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap border pointer-events-auto',
-                poi.tipo === 'psr' ? 'bg-blue-900/30 border-blue-500/30 text-cyan-300 hover:bg-blue-900/50' :
-                poi.tipo === 'mount' ? 'bg-amber-900/30 border-amber-500/30 text-amber-300 hover:bg-amber-900/50' :
-                poi.tipo === 'clps' ? 'bg-green-900/30 border-green-500/30 text-green-300 hover:bg-green-900/50' :
-                'bg-purple-900/30 border-purple-500/30 text-purple-300 hover:bg-purple-900/50'
-              ]"
-              :title="poi.desc"
-            >
-              {{ poi.nombre }}
-            </button>
-          </template>
-        </div>
-      </div>
-    </div>
-    <!-- Hamburger toggle (always visible) -->
-    <button 
-      v-else 
-      @click.stop="leyendaVisible = true" 
-      class="fixed top-16 right-4 z-30 backdrop-blur-md bg-black/75 border border-white/10 p-2 rounded-xl text-xs pointer-events-auto shadow-2xl text-gray-400 hover:text-white"
-      title="Mostrar leyenda POI"
-    >☰</button>
 
     <!-- MAIN WORKSPACE -->
     <div class="relative flex-1 overflow-hidden">
@@ -73,97 +155,200 @@
       <!-- ============================================================== -->
       <!-- VIEW 1: MISSION PLANNER                                        -->
       <!-- ============================================================== -->
-      <div v-show="activeTab === 'planner'" class="absolute inset-0 p-6 overflow-y-auto bg-[#07090e] z-10 flex flex-col gap-5">
+      <div v-show="activeTab === 'planner'" class="absolute inset-0 p-6 overflow-y-auto bg-[#07090e] z-10 flex flex-col gap-4">
         
-        <!-- TELEMETRY ROW -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 shadow-xl flex flex-col justify-between">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Radiative Equilibrium Temp (est.)</span>
-              <span :class="thermalTelemetria.kelvin < 100 ? 'text-cyan-400' : 'text-amber-400'" class="text-[10px] font-mono">● {{ thermalTelemetria.status }}</span>
+        <!-- 1. MATRIZ DE SITIOS CANDIDATOS (JUSTO BAJO LA CABECERA) -->
+        <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 shadow-xl flex flex-col shrink-0">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-3">
+            <div>
+              <h2 class="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                <span>Matriz de Decisión de Sitios Candidatos</span>
+                <span v-if="sitiosCandidatos.length > 0" class="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-normal">
+                  {{ sitiosCandidatos.length }} evaluados
+                </span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">Seguridad de pendiente en huella, visibilidad Sol / Tierra a 30 días, despeje de corredor GNC y temperatura de equilibrio radiativo</p>
             </div>
-            <div class="flex items-baseline gap-2 mt-1">
-              <p class="text-2xl font-mono font-bold text-white">{{ thermalTelemetria.kelvin }} K</p>
-              <span class="text-xs font-mono text-gray-400">({{ thermalTelemetria.celsius }} °C)</span>
-            </div>
-            <p class="text-[10px] text-gray-500 mt-2">Instantaneous estimate at the active point · no regolith conduction</p>
+
+            <button 
+              v-if="sitiosSeleccionadosComparar.length === 2"
+              @click="mostrarModalComparador = true"
+              class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              </svg>
+              Comparar 2 Sitios Seleccionados
+            </button>
           </div>
 
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 shadow-xl flex flex-col justify-between">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Optical Vision (TRN)</span>
-              <span class="text-[10px] text-green-400 font-mono">{{ trnTelemetria.score }}% Reliability</span>
-            </div>
-            <p class="text-base font-bold text-white mt-1 uppercase">{{ trnTelemetria.status }}</p>
-            <p class="text-[10px] text-gray-500 mt-2">{{ trnTelemetria.detail }} · illustrative thresholds</p>
-          </div>
-
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 shadow-xl flex flex-col justify-between">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">GNC Corridor (12° glideslope, assumed)</span>
-              <span :class="gncCorredor.clear ? 'text-green-400' : 'text-red-400'" class="text-[10px] font-mono font-bold">
-                {{ gncCorredor.clear ? 'CLEAR' : 'OBSTACLE DETECTED' }}
+          <!-- Barra de progreso si el worker está auditando -->
+          <div v-if="calculando" class="mb-3 bg-[#121622] border border-blue-500/40 p-3 rounded-xl shadow-lg flex flex-col gap-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-blue-400 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
+                {{ workerStatus }}
               </span>
+              <span class="font-mono text-white font-bold">{{ workerProgress }}%</span>
             </div>
-            <div class="flex items-baseline gap-2 mt-1">
-              <p class="text-2xl font-mono font-bold" :class="gncCorredor.clear ? 'text-white' : 'text-red-400'">
-                +{{ gncCorredor.minMarginM }} m
-              </p>
-              <span class="text-xs text-gray-400">Terrain Clearance</span>
+            <div class="w-full bg-black/50 rounded-full h-2 overflow-hidden border border-white/10">
+              <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all duration-150" :style="{ width: workerProgress + '%' }"></div>
             </div>
-            <p class="text-[10px] text-gray-500 mt-2">1.5–20 km straight-line corridor · fixed approach azimuth (assumption)</p>
+          </div>
+          
+          <div v-if="sitiosCandidatos.length === 0" class="flex flex-col items-center justify-center text-slate-400 py-6">
+            <svg class="w-8 h-8 text-slate-500 mb-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p class="text-xs">No hay datos de simulación regional disponibles actualmente.</p>
+            <p class="text-xs mt-1 text-slate-400">Haz clic en <span class="text-blue-400 font-semibold">"Buscar mejores sitios"</span> para iniciar el análisis multihilo.</p>
           </div>
 
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 shadow-xl flex flex-col justify-between">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Libration & DSN Link</span>
-              <span :class="tierraVisible ? 'text-blue-400' : 'text-amber-400'" class="text-[10px] font-mono">
-                {{ tierraVisible ? '● EARTH IN LINE OF SIGHT' : '● NO LINE OF SIGHT' }}
-              </span>
-            </div>
-            <p class="text-base font-bold text-white mt-1">{{ libracionTelemetria.status }}</p>
-            <p class="text-[10px] text-gray-500 mt-2">Earth Elev: {{ efemerides.tierra_el.toFixed(1) }}° | Margin over terrain: {{ libracionTelemetria.marginDeg }}° | {{ libracionTelemetria.risk }}</p>
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-200">
+              <thead class="bg-black/40 text-slate-300 uppercase text-xs tracking-wider border-b border-white/10">
+                <tr>
+                  <th class="p-2.5">Comparar</th>
+                  <th class="p-2.5">Designación</th>
+                  <th class="p-2.5">Coordenadas</th>
+                  <th class="p-2.5">Pendiente Huella</th>
+                  <th class="p-2.5">Despeje GNC (20km)</th>
+                  <th class="p-2.5">Sol / DTE (30 d)</th>
+                  <th class="p-2.5">Temp (est.)</th>
+                  <th class="p-2.5">Idoneidad</th>
+                  <th class="p-2.5">Inspección 3D</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="sitio in sitiosCandidatos" :key="sitio.rank" class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td class="p-2.5">
+                    <input type="checkbox" :value="sitio" v-model="sitiosSeleccionadosComparar" :disabled="sitiosSeleccionadosComparar.length >= 2 && !sitiosSeleccionadosComparar.includes(sitio)" class="accent-blue-500 cursor-pointer">
+                  </td>
+                  <td class="p-2.5 font-bold text-blue-400">#{{ sitio.rank }} - Candidato {{ String.fromCharCode(64 + sitio.rank) }}</td>
+                  <td class="p-2.5 font-mono text-slate-300">F: {{ sitio.fila }} | C: {{ sitio.col }}</td>
+                  <td class="p-2.5 font-mono font-bold" :class="sitio.seguridad.nivel === 'NOMINAL' ? 'text-emerald-400' : (sitio.seguridad.nivel === 'CAUTION' ? 'text-amber-400' : 'text-rose-400')">
+                    ≤ {{ sitio.peorPendiente }}°
+                  </td>
+                  <td class="p-2.5 font-mono font-bold" :class="sitio.gnc.clear ? 'text-emerald-400' : 'text-rose-400'">
+                    {{ sitio.gnc.clear ? '✓ +' + sitio.gnc.minMarginM + ' m' : '✗ Bloqueado (' + sitio.gnc.minMarginM + 'm)' }}
+                  </td>
+                  <td class="p-2.5 font-mono text-slate-200">
+                    Sol {{ sitio.sol_pct }}% · DTE {{ sitio.dte_pct }}%
+                  </td>
+                  <td class="p-2.5 font-mono text-slate-100">{{ sitio.termica.kelvin }} K</td>
+                  <td class="p-2.5 font-bold font-mono" :class="sitio.score >= 80 ? 'text-emerald-400' : (sitio.score >= 60 ? 'text-amber-400' : 'text-rose-400')">
+                    {{ sitio.score }} / 100
+                  </td>
+                  <td class="p-2.5">
+                    <button @click="inspeccionarSitio(sitio)" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow">
+                      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="22" y1="12" x2="18" y2="12" />
+                        <line x1="6" y1="12" x2="2" y2="12" />
+                        <line x1="12" y1="6" x2="12" y2="2" />
+                        <line x1="12" y1="22" x2="12" y2="18" />
+                      </svg>
+                      Vector GNC 3D
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- CONTROL PANELS -->
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-5">
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+        <!-- 2. LAS CUATRO TARJETAS DEL SITIO ACTIVO EN FILA COMPACTA DEBAJO -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Temp Equilibrio Radiativo</span>
+              <span :class="thermalTelemetria.kelvin < 100 ? 'text-amber-400' : 'text-emerald-400'" class="text-xs font-mono font-bold">
+                ● {{ thermalTelemetria.status }}
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <p class="text-xl font-mono font-bold text-white">{{ thermalTelemetria.kelvin }} K</p>
+              <span class="text-xs font-mono text-slate-300">({{ thermalTelemetria.celsius }} °C)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5">Estimación instantánea en el punto activo · sin conducción de regolito</p>
+          </div>
+
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Visión Óptica (TRN)</span>
+              <span :class="trnTelemetria.score >= 70 ? 'text-emerald-400' : (trnTelemetria.score >= 50 ? 'text-amber-400' : 'text-rose-400')" class="text-xs font-mono font-bold">
+                {{ trnTelemetria.score }}% Fiabilidad
+              </span>
+            </div>
+            <p class="text-sm font-bold text-white mt-1 uppercase">{{ trnTelemetria.status }}</p>
+            <p class="text-xs text-slate-400 mt-1.5">{{ trnTelemetria.detail }} · umbrales ilustrativos</p>
+          </div>
+
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Corredor GNC (12° descenso)</span>
+              <span :class="gncCorredor.clear ? 'text-emerald-400' : 'text-rose-400'" class="text-xs font-mono font-bold">
+                {{ gncCorredor.clear ? 'DESPEJADO' : 'OBSTÁCULO' }}
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <p class="text-xl font-mono font-bold" :class="gncCorredor.clear ? 'text-white' : 'text-rose-400'">
+                +{{ gncCorredor.minMarginM }} m
+              </p>
+              <span class="text-xs text-slate-300">Margen sobre terreno</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5">Corredor lineal 1,5–20 km · aproximación con azimut fijo</p>
+          </div>
+
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Libración y Enlace DTE</span>
+              <span :class="tierraVisible ? 'text-emerald-400' : 'text-rose-400'" class="text-xs font-mono font-bold">
+                {{ tierraVisible ? '● TIERRA VISIBLE' : '● SIN VISIÓN' }}
+              </span>
+            </div>
+            <p class="text-sm font-bold text-white mt-1">{{ libracionTelemetria.status }}</p>
+            <p class="text-xs text-slate-400 mt-1.5">Elevación Tierra: {{ efemerides.tierra_el.toFixed(1) }}° | Margen: {{ libracionTelemetria.marginDeg }}° | {{ libracionTelemetria.risk }}</p>
+          </div>
+        </div>
+
+        <!-- 3. PANELES DE CONTROL INFERIORES -->
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 flex flex-col gap-3.5 shadow-xl">
             <div class="flex justify-between items-center border-b border-white/10 pb-2">
-              <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Lander Flight Configuration</h2>
-              <span class="text-[10px] text-blue-400 font-mono">CLPS Specs</span>
+              <h2 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Configuración del Vehículo</h2>
+              <span class="text-xs text-blue-400 font-mono">CLPS Specs</span>
             </div>
 
             <div>
-              <label class="block text-[11px] text-gray-400 mb-1">Vehicle Preset</label>
+              <label class="block text-xs text-slate-400 mb-1">Vehículo Predeterminado</label>
               <select v-model="vehiculoSeleccionado" @change="aplicarPresetVehiculo" class="w-full bg-black/50 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-blue-500">
                 <option value="nova-c">Intuitive Machines Nova-C (CLPS-1)</option>
                 <option value="griffin">Astrobotic Griffin</option>
                 <option value="hakuto">ispace HAKUTO-R M1</option>
                 <option value="hls">SpaceX Starship HLS (Artemis III)</option>
               </select>
-              <p class="text-[9px] text-amber-400/80 mt-1">Illustrative values, not official vehicle specs.</p>
+              <p class="text-xs text-slate-400 mt-1">Valores ilustrativos, no oficiales del fabricante.</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 text-xs bg-black/30 p-3 rounded-lg border border-white/5">
+            <div class="grid grid-cols-2 gap-3 text-xs bg-black/30 p-2.5 rounded-lg border border-white/5">
               <div>
-                <span class="text-[10px] text-gray-500 block">Mast Height</span>
+                <span class="text-xs text-slate-400 block">Altura Mástil</span>
                 <span class="font-mono text-white font-bold">{{ vehiculo.alturaMastil }} m</span>
               </div>
               <div>
-                <span class="text-[10px] text-gray-500 block">Slope Limit</span>
-                <span class="font-mono text-yellow-400 font-bold">≤ {{ vehiculo.maxPendiente }}°</span>
+                <span class="text-xs text-slate-400 block">Límite Pendiente</span>
+                <span class="font-mono text-amber-400 font-bold">≤ {{ vehiculo.maxPendiente }}°</span>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-[11px] text-gray-400 mb-1">Landing Date (T0)</label>
+                <label class="block text-xs text-slate-400 mb-1">Fecha Alunizaje (T0)</label>
                 <input type="date" v-model="selectedDate" @change="recalcularEfemérides" class="w-full bg-black/40 border border-white/10 rounded p-1.5 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[11px] text-gray-400 mb-1">Safety Footprint</label>
-                <select v-model.number="radioHuellaMetros" @change="limpiarResultadosAuditoria" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-xs text-amber-400 font-bold">
+                <label class="block text-xs text-slate-400 mb-1">Radio Huella Segura</label>
+                <select v-model.number="radioHuellaMetros" @change="limpiarResultadosAuditoria" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-xs text-slate-200 font-bold">
                   <option :value="320">320 m</option>
                   <option :value="480">480 m</option>
                   <option :value="640">640 m</option>
@@ -171,188 +356,121 @@
               </div>
             </div>
 
-            <!-- MULTITHREADED AUDIT BUTTON -->
+            <!-- BOTÓN: BUSCAR MEJORES SITIOS (Requirement 5 & 6) -->
             <button 
               @click="ejecutarAutopilotMultithread" 
               :disabled="calculando"
-              class="w-full mt-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white shadow-lg transition-all cursor-pointer disabled:opacity-50">
-              {{ calculando ? 'Auditing Background Worker...' : '🚀 Execute Background Worker Audit' }}
+              class="w-full mt-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+              <svg class="w-4 h-4 shrink-0" :class="{ 'animate-spin': calculando }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 019 9" />
+              </svg>
+              <span>{{ calculando ? 'Buscando mejores sitios...' : 'Buscar mejores sitios' }}</span>
             </button>
           </div>
 
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 flex flex-col gap-3.5 shadow-xl">
             <div class="flex justify-between items-center border-b border-white/10 pb-2">
-              <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Surface Survival Timeline</h2>
-              <button @click="saltarAProximaVentanaDTE" class="bg-blue-600/20 hover:bg-blue-600 border border-blue-500/30 text-blue-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer">
-                🛰️ Seek Active DTE
+              <h2 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Cronograma de Supervivencia</h2>
+              <button @click="saltarAProximaVentanaDTE" class="bg-blue-600/20 hover:bg-blue-600 border border-blue-500/30 text-blue-300 hover:text-white px-2.5 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+                Buscar DTE Activo
               </button>
             </div>
 
             <div class="bg-black/40 border border-white/10 p-2.5 rounded-lg flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <button @click="toggleSimulationPlay" class="w-7 h-7 rounded bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
-                  {{ isPlaying ? '⏸' : '▶' }}
+                  <svg v-if="isPlaying" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                  </svg>
+                  <svg v-else class="w-3.5 h-3.5 translate-x-0.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
                 </button>
                 <div>
-                  <span class="text-[9px] text-gray-400 block font-mono">TIME RATE</span>
+                  <span class="text-xs text-slate-400 block font-mono uppercase">Velocidad</span>
                   <span class="text-xs font-mono font-bold text-white">{{ simSpeed }}x</span>
                 </div>
               </div>
               
               <div class="flex gap-1">
-                <button @click="simSpeed = 1" :class="simSpeed === 1 ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400'" class="px-2 py-1 rounded text-[10px] font-mono cursor-pointer">1x</button>
-                <button @click="simSpeed = 60" :class="simSpeed === 60 ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400'" class="px-2 py-1 rounded text-[10px] font-mono cursor-pointer">60x</button>
-                <button @click="simSpeed = 3600" :class="simSpeed === 3600 ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400'" class="px-2 py-1 rounded text-[10px] font-mono cursor-pointer">3600x</button>
+                <button @click="simSpeed = 1" :class="simSpeed === 1 ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300'" class="px-2 py-1 rounded text-xs font-mono cursor-pointer">1x</button>
+                <button @click="simSpeed = 60" :class="simSpeed === 60 ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300'" class="px-2 py-1 rounded text-xs font-mono cursor-pointer">60x</button>
+                <button @click="simSpeed = 3600" :class="simSpeed === 3600 ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300'" class="px-2 py-1 rounded text-xs font-mono cursor-pointer">3600x</button>
               </div>
             </div>
 
             <div class="flex flex-col gap-2">
-              <span class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Sunlight Cycle</span>
+              <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Ciclo Solar (7 Días)</span>
               <div class="grid grid-cols-7 gap-1">
-                <div v-for="(dia, idx) in timelineDias" :key="'sol-' + idx" :class="dia.sol ? 'bg-amber-500 text-black font-bold' : 'bg-neutral-800 text-gray-500'" class="h-8 rounded flex flex-col items-center justify-center text-[10px]">
+                <div v-for="(dia, idx) in timelineDias" :key="'sol-' + idx" :class="dia.sol ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold' : 'bg-neutral-800 text-slate-400'" class="h-9 rounded flex flex-col items-center justify-center text-xs">
                   <span>D{{ idx + 1 }}</span>
-                  <span class="text-[7px]">{{ dia.sol ? 'SUN' : 'SHADE' }}</span>
+                  <span class="text-xs">{{ dia.sol ? 'SOL' : 'SOM' }}</span>
                 </div>
               </div>
 
-              <span class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-1">Direct-To-Earth (DTE) Link</span>
+              <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold mt-1">Enlace Directo a Tierra (DTE)</span>
               <div class="grid grid-cols-7 gap-1">
-                <div v-for="(dia, idx) in timelineDias" :key="'dte-' + idx" :class="dia.dte ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-500/50' : 'bg-neutral-800 text-gray-500'" class="h-8 rounded flex flex-col items-center justify-center text-[10px]">
+                <div v-for="(dia, idx) in timelineDias" :key="'dte-' + idx" :class="dia.dte ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold' : 'bg-neutral-800 text-slate-400'" class="h-9 rounded flex flex-col items-center justify-center text-xs">
                   <span>D{{ idx + 1 }}</span>
-                  <span class="text-[7px]">{{ dia.dte ? 'LINK' : 'LOS' }}</span>
+                  <span class="text-xs">{{ dia.dte ? 'LINK' : 'LOS' }}</span>
                 </div>
               </div>
             </div>
 
             <div class="mt-auto bg-black/40 border border-white/5 rounded-lg p-2.5 flex justify-between items-center">
-              <span class="text-[11px] text-gray-400 font-semibold">EPS Net Power <span class="text-[9px] text-gray-500 font-normal">(vertical panel facing the Sun, assumed)</span></span>
-              <p :class="potencia.neta > 0 ? 'text-green-400' : 'text-red-400'" class="text-lg font-mono font-bold">
+              <span class="text-xs text-slate-300 font-semibold">Potencia Neta EPS</span>
+              <p :class="potencia.neta > 0 ? 'text-emerald-400' : 'text-rose-400'" class="text-base font-mono font-bold">
                 {{ potencia.neta > 0 ? '+' + potencia.neta : potencia.neta }} W
               </p>
             </div>
           </div>
 
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-5 flex flex-col items-center justify-between shadow-xl">
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 flex flex-col items-center justify-between shadow-xl">
             <div class="w-full flex justify-between items-center border-b border-white/10 pb-2">
-              <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">360° Polar Horizon Radar</h2>
-              <span class="text-[10px] text-cyan-400 font-mono">Skyline · Az 0° = map-up</span>
+              <h2 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Radar Polar 360°</h2>
+              <span class="text-xs text-cyan-400 font-mono">Horizonte · Az 0° = Norte</span>
             </div>
 
             <div class="relative w-44 h-44 flex items-center justify-center my-1">
               <canvas ref="radarCanvas" width="180" height="180" class="rounded-full bg-black/60 border border-white/10"></canvas>
             </div>
 
-            <div class="w-full flex justify-between text-[10px] text-gray-400 border-t border-white/5 pt-2">
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Sun</span>
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Earth</span>
+            <div class="w-full flex justify-between text-xs text-slate-300 border-t border-white/5 pt-2">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Sol</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Tierra</span>
             </div>
           </div>
 
-          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          <div class="bg-[#0f141f] border border-white/10 rounded-xl p-4 flex flex-col gap-3.5 shadow-xl">
             <div class="flex justify-between items-center border-b border-white/10 pb-2">
-              <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Deep Space Network</h2>
-              <span class="text-[10px] text-amber-400 font-mono">● Moon elevation per complex</span>
+              <h2 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Red Deep Space Network</h2>
+              <span class="text-xs text-slate-400 font-mono">Elevación Lunar</span>
             </div>
 
-            <div class="flex flex-col gap-2.5">
+            <div class="flex flex-col gap-2">
               <div v-for="clave in ['Madrid', 'Goldstone', 'Canberra']" :key="clave"
-                   :class="estacionActiva === clave ? 'border-green-500/50 bg-green-950/20' : 'border-white/5 bg-black/20'"
-                   class="p-2.5 rounded-lg border flex justify-between items-center">
+                   :class="estacionActiva === clave ? 'border-emerald-500/50 bg-emerald-950/20' : 'border-white/5 bg-black/20'"
+                   class="p-2 rounded-lg border flex justify-between items-center">
                 <div>
                   <span class="text-xs text-white font-semibold">{{ dsnTelemetria[clave] ? dsnTelemetria[clave].nombre : clave }}</span>
-                  <span class="text-[9px] text-gray-400 block">Moon az {{ dsnTelemetria[clave] ? dsnTelemetria[clave].az : '-' }}°</span>
+                  <span class="text-xs text-slate-400 block font-mono">Az {{ dsnTelemetria[clave] ? dsnTelemetria[clave].az : '-' }}°</span>
                 </div>
-                <span :class="dsnTelemetria[clave] && dsnTelemetria[clave].enlace ? 'text-green-400' : 'text-red-400'" class="text-xs font-mono font-bold">
+                <span :class="dsnTelemetria[clave] && dsnTelemetria[clave].enlace ? 'text-emerald-400' : 'text-rose-400'" class="text-xs font-mono font-bold">
                   {{ dsnTelemetria[clave] ? (dsnTelemetria[clave].el > 0 ? '+' : '') + dsnTelemetria[clave].el : '-' }}° El
                 </span>
               </div>
             </div>
 
-            <p class="text-[9px] text-gray-500">Topocentric Moon elevation (computed). A link needs the Moon above a {{ dsnMinEl }}° mask (assumed) and Earth in the lander's line of sight.</p>
+            <p class="text-xs text-slate-400">Enlace condicionado a elevación sobre máscara de {{ dsnMinEl }}° y visibilidad hacia la Tierra.</p>
 
-            <div class="mt-auto text-[10px] text-gray-400 bg-black/30 p-2 rounded border border-white/5 flex justify-between">
-              <span>Active complex:</span>
-              <span class="text-green-400 font-mono font-bold">{{ estacionActiva || 'none' }}</span>
+            <div class="mt-auto text-xs text-slate-300 bg-black/30 p-2 rounded border border-white/5 flex justify-between">
+              <span>Complejo Activo:</span>
+              <span class="text-emerald-400 font-mono font-bold">{{ estacionActiva || 'Ninguno' }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- PROGRESS BAR OVERLAY WHEN MULTITHREADING -->
-        <div v-if="calculando" class="bg-[#121622] border border-blue-500/40 p-4 rounded-xl shadow-2xl flex flex-col gap-2 animate-in fade-in">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-blue-400 uppercase tracking-wide flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
-              {{ workerStatus }}
-            </span>
-            <span class="font-mono text-white font-bold">{{ workerProgress }}%</span>
-          </div>
-          <div class="w-full bg-black/50 rounded-full h-2 overflow-hidden border border-white/10">
-            <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all duration-150" :style="{ width: workerProgress + '%' }"></div>
-          </div>
-        </div>
-
-        <!-- CANDIDATE SITES MATRIX -->
-        <div class="bg-[#0f141f] border border-white/10 rounded-xl p-5 shadow-xl flex-1 flex flex-col">
-          <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-3">
-            <div>
-              <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                Candidate Landing Site Decision Matrix
-              </h2>
-              <p class="text-[11px] text-gray-500">Slope-footprint safety, 30-day Sun / Earth visibility (terrain horizon), glideslope check and radiative-equilibrium temperature estimate</p>
-            </div>
-
-            <button 
-              v-if="sitiosSeleccionadosComparar.length === 2"
-              @click="mostrarModalComparador = true"
-              class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow cursor-pointer">
-              ⚖️ Compare 2 Selected Sites
-            </button>
-          </div>
-          
-          <div v-if="sitiosCandidatos.length === 0" class="flex-1 flex flex-col items-center justify-center text-gray-500 py-12">
-            <p class="text-sm">No regional simulation data currently available.</p>
-            <p class="text-xs mt-1 text-gray-600">Click "Execute Background Worker Audit" to start background processing.</p>
-          </div>
-
-          <div v-else class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-gray-300">
-              <thead class="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
-                <tr>
-                  <th class="p-3">Compare</th>
-                  <th class="p-3">Designation</th>
-                  <th class="p-3">Grid Coords</th>
-                  <th class="p-3">Footprint Slope</th>
-                  <th class="p-3">GNC Clearance (20km)</th>
-                  <th class="p-3">Sun / DTE (30 d)</th>
-                  <th class="p-3">Temp (est.)</th>
-                  <th class="p-3">Suitability</th>
-                  <th class="p-3">3D Inspection</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="sitio in sitiosCandidatos" :key="sitio.rank" class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td class="p-3">
-                    <input type="checkbox" :value="sitio" v-model="sitiosSeleccionadosComparar" :disabled="sitiosSeleccionadosComparar.length >= 2 && !sitiosSeleccionadosComparar.includes(sitio)" class="accent-amber-500 cursor-pointer">
-                  </td>
-                  <td class="p-3 font-bold text-blue-400">#{{ sitio.rank }} - Candidate {{ String.fromCharCode(64 + sitio.rank) }}</td>
-                  <td class="p-3 font-mono text-gray-400">R: {{ sitio.fila }} | C: {{ sitio.col }}</td>
-                  <td class="p-3 font-mono text-green-400 font-bold">≤ {{ sitio.peorPendiente }}°</td>
-                  <td class="p-3 font-mono" :class="sitio.gnc.clear ? 'text-green-400' : 'text-red-400'">
-                    {{ sitio.gnc.clear ? '✓ +' + sitio.gnc.minMarginM + ' m' : '✗ Blocked (' + sitio.gnc.minMarginM + 'm)' }}
-                  </td>
-                  <td class="p-3 font-mono text-cyan-400">
-                    ☀️ {{ sitio.sol_pct }}% · 📡 {{ sitio.dte_pct }}%
-                  </td>
-                  <td class="p-3 font-mono text-white">{{ sitio.termica.kelvin }} K</td>
-                  <td class="p-3 font-bold text-green-400">{{ sitio.score }} / 100</td>
-                  <td class="p-3">
-                    <button @click="inspeccionarSitio(sitio)" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow">
-                      <span>🚀</span> GNC Vector 3D
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -370,166 +488,183 @@
 
         <!-- TOP-LEFT: GIS SCIENTIFIC LAYER SELECTOR -->
         <div class="absolute top-6 left-6 backdrop-blur-md bg-black/80 border border-white/10 p-4 rounded-xl text-xs pointer-events-auto shadow-2xl flex flex-col gap-3">
-          <h3 class="font-bold text-white uppercase text-[11px] tracking-wider border-b border-white/10 pb-1 flex items-center gap-1.5">
-            <span>🗺️</span> GIS Overlays
+          <h3 class="font-bold text-white uppercase text-xs tracking-wider border-b border-white/10 pb-1 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
+            </svg>
+            Capas Científicas GIS
           </h3>
           
           <div class="flex flex-col gap-1.5">
             <button 
               @click="cambiarCapaGIS('pbr')" 
-              :class="capaGISActiva === 'pbr' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-gray-300 hover:bg-white/10'" 
-              class="px-3 py-1.5 rounded text-[11px] text-left transition-all cursor-pointer flex items-center justify-between">
-              <span>📷 Natural Regolith (PBR)</span>
-              <span v-if="capaGISActiva === 'pbr'" class="text-[9px]">ACTIVE</span>
+              :class="capaGISActiva === 'pbr' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+              class="px-3 py-1.5 rounded text-xs text-left transition-all cursor-pointer flex items-center justify-between gap-3">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+                Regolito Natural (PBR)
+              </span>
+              <span v-if="capaGISActiva === 'pbr'" class="text-xs font-mono">ACTIVA</span>
             </button>
 
             <button 
               @click="cambiarCapaGIS('elevation')" 
-              :class="capaGISActiva === 'elevation' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-gray-300 hover:bg-white/10'" 
-              class="px-3 py-1.5 rounded text-[11px] text-left transition-all cursor-pointer flex items-center justify-between">
-              <span>🏔️ Elevation Heatmap (Hypsometric)</span>
-              <span v-if="capaGISActiva === 'elevation'" class="text-[9px]">ACTIVE</span>
+              :class="capaGISActiva === 'elevation' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+              class="px-3 py-1.5 rounded text-xs text-left transition-all cursor-pointer flex items-center justify-between gap-3">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 20l7-12 5 8 6-10"/></svg>
+                Elevación Hipsométrica
+              </span>
+              <span v-if="capaGISActiva === 'elevation'" class="text-xs font-mono">ACTIVA</span>
             </button>
 
             <button 
               @click="cambiarCapaGIS('slope')" 
-              :class="capaGISActiva === 'slope' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-gray-300 hover:bg-white/10'" 
-              class="px-3 py-1.5 rounded text-[11px] text-left transition-all cursor-pointer flex items-center justify-between">
-              <span>📐 Slope Hazard (Touchdown Safety)</span>
-              <span v-if="capaGISActiva === 'slope'" class="text-[9px]">ACTIVE</span>
+              :class="capaGISActiva === 'slope' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+              class="px-3 py-1.5 rounded text-xs text-left transition-all cursor-pointer flex items-center justify-between gap-3">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H5a2 2 0 01-2-2V5l16 16z"/></svg>
+                Riesgo de Pendiente
+              </span>
+              <span v-if="capaGISActiva === 'slope'" class="text-xs font-mono">ACTIVA</span>
             </button>
 
             <button 
               @click="cambiarCapaGIS('illumination')" 
-              :class="capaGISActiva === 'illumination' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-gray-300 hover:bg-white/10'" 
-              class="px-3 py-1.5 rounded text-[11px] text-left transition-all cursor-pointer flex items-center justify-between">
-              <span>☀️ 30-day Sun Fraction (coarse)</span>
-              <span v-if="capaGISActiva === 'illumination'" class="text-[9px]">ACTIVE</span>
+              :class="capaGISActiva === 'illumination' ? 'bg-blue-600 text-white font-bold shadow' : 'bg-white/5 text-slate-300 hover:bg-white/10'" 
+              class="px-3 py-1.5 rounded text-xs text-left transition-all cursor-pointer flex items-center justify-between gap-3">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                Fracción Solar (30 días)
+              </span>
+              <span v-if="capaGISActiva === 'illumination'" class="text-xs font-mono">ACTIVA</span>
             </button>
           </div>
 
-          <!-- DYNAMIC GIS COLOR LEGEND -->
-          <div class="mt-2 pt-2 border-t border-white/10 text-[10px]">
-            <span class="text-gray-400 block mb-1.5 font-semibold uppercase tracking-wider">Layer Color Scale</span>
+          <!-- ESCALA DE COLOR GIS -->
+          <div class="mt-2 pt-2 border-t border-white/10 text-xs">
+            <span class="text-slate-400 block mb-1.5 font-semibold uppercase tracking-wider">Escala Cromática de Capa</span>
             
             <div v-if="capaGISActiva === 'elevation'" class="flex flex-col gap-1">
               <div class="h-2 w-full rounded bg-gradient-to-r from-blue-700 via-emerald-500 to-red-600"></div>
-              <div class="flex justify-between text-[9px] text-gray-400 font-mono">
-                <span>-4,000 m (Floors)</span>
-                <span>+4,000 m (Peaks)</span>
+              <div class="flex justify-between text-xs text-slate-400 font-mono">
+                <span>-4.000 m (Fondos)</span>
+                <span>+4.000 m (Picos)</span>
               </div>
             </div>
 
             <div v-else-if="capaGISActiva === 'slope'" class="flex flex-col gap-1">
               <div class="h-2 w-full rounded bg-gradient-to-r from-emerald-500 via-amber-400 to-red-600"></div>
-              <div class="flex justify-between text-[9px] text-gray-400 font-mono">
-                <span>0° (Safe Flat)</span>
-                <span>{{ vehiculo.maxPendiente }}° Limit</span>
-                <span>>15° (Hazard)</span>
+              <div class="flex justify-between text-xs text-slate-400 font-mono">
+                <span>0° (Seguro)</span>
+                <span>{{ vehiculo.maxPendiente }}° Límite</span>
+                <span>>15° (Peligro)</span>
               </div>
             </div>
 
             <div v-else-if="capaGISActiva === 'illumination'" class="flex flex-col gap-1">
               <div class="h-2 w-full rounded bg-gradient-to-r from-indigo-900 via-fuchsia-600 to-amber-300"></div>
-              <div class="flex justify-between text-[9px] text-gray-400 font-mono">
-                <span>0% (no Sun in 30 d)</span>
-                <span>≥85% (near-continuous)</span>
+              <div class="flex justify-between text-xs text-slate-400 font-mono">
+                <span>0% (Sin Sol)</span>
+                <span>≥85% (Cuasi-continuo)</span>
               </div>
             </div>
 
-            <div v-else class="text-[9px] text-gray-400">
-              Photorealistic PBR Regolith with live ACES Tone Mapping.
+            <div v-else class="text-xs text-slate-400">
+              Regolito fotorealista PBR con mapeo de tonos ACES en vivo.
             </div>
           </div>
         </div>
 
-        <!-- TOP-RIGHT: VISUAL & EPHEMERIS HUD -->
+        <!-- TOP-RIGHT: CONTROLES VISUALES Y EFEMÉRIDES -->
         <div class="absolute top-6 right-6 backdrop-blur-md bg-black/75 border border-white/10 p-4 rounded-xl text-xs pointer-events-auto shadow-2xl w-72">
-          <h3 class="font-bold text-white uppercase text-[11px] tracking-wider mb-2 border-b border-white/10 pb-1">Visual & Ephemeris Controls</h3>
+          <h3 class="font-bold text-white uppercase text-xs tracking-wider mb-2 border-b border-white/10 pb-1">Controles Visuales y Efemérides</h3>
           
           <div class="mb-3">
-            <label class="flex justify-between text-[11px] text-gray-400 mb-1">
-              <span>Solar Hour</span>
+            <label class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Hora Solar UTC</span>
               <span class="text-blue-400 font-mono">{{ simHora }}:00 h</span>
             </label>
             <input type="range" min="0" max="23" v-model.number="simHora" @input="recalcularEfemérides" class="w-full accent-blue-500 cursor-pointer">
           </div>
 
           <div class="mb-3">
-            <label class="flex justify-between text-[11px] text-gray-400 mb-1">
-              <span>Shadow Light (Earthshine)</span>
+            <label class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Luz Secundaria (Tierra)</span>
               <span class="text-cyan-400 font-mono font-bold">{{ (luzSombras * 100).toFixed(0) }}%</span>
             </label>
             <input type="range" min="0.05" max="1.5" step="0.05" v-model.number="luzSombras" @input="actualizarIluminacion" class="w-full accent-cyan-500 cursor-pointer">
           </div>
 
           <div class="mb-3">
-            <label class="flex justify-between text-[11px] text-gray-400 mb-1">
-              <span>Exposure / Gamma</span>
+            <label class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Exposición / Gamma</span>
               <span class="text-amber-400 font-mono font-bold">{{ exposicion.toFixed(1) }}x</span>
             </label>
             <input type="range" min="0.5" max="3.5" step="0.1" v-model.number="exposicion" @input="actualizarIluminacion" class="w-full accent-amber-500 cursor-pointer">
           </div>
 
           <div>
-            <label class="block text-[11px] text-gray-400 mb-1">Simulation Date</label>
+            <label class="block text-xs text-slate-400 mb-1">Fecha de Simulación</label>
             <input type="date" v-model="selectedDate" @change="recalcularEfemérides" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-xs text-white">
           </div>
         </div>
 
-        <!-- BOTTOM-RIGHT: CLICK-TO-PROBE CARD -->
-        <div v-if="sondeoPunto" class="absolute bottom-6 right-6 backdrop-blur-md bg-black/85 border border-cyan-500/40 p-5 rounded-xl text-xs pointer-events-auto shadow-2xl w-80 animate-in fade-in">
+        <!-- BOTTOM-RIGHT: SONDEO DE PUNTO -->
+        <div v-if="sondeoPunto" class="absolute bottom-6 right-6 backdrop-blur-md bg-black/85 border border-cyan-500/40 p-4 rounded-xl text-xs pointer-events-auto shadow-2xl w-80">
           <div class="flex justify-between items-center mb-2.5 border-b border-white/10 pb-2">
             <div class="flex items-center gap-1.5">
               <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
-              <span class="font-bold text-white uppercase text-[11px] tracking-wider">Point Surface Probe</span>
+              <span class="font-bold text-white uppercase text-xs tracking-wider">Sondeo de Superficie</span>
             </div>
-            <button @click="cerrarSondeo" class="text-gray-400 hover:text-white text-xs cursor-pointer">✕</button>
+            <button @click="cerrarSondeo" class="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
           </div>
 
-          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-gray-300">
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-slate-300">
             <div>
-              <span class="text-[9px] text-gray-400 uppercase block">Elevation (MSL)</span>
+              <span class="text-xs text-slate-400 uppercase block">Elevación (MSL)</span>
               <span class="text-white font-mono font-bold text-sm">{{ sondeoPunto.altura }} m</span>
             </div>
             <div>
-              <span class="text-[9px] text-gray-400 uppercase block">Local Slope</span>
-              <span :class="sondeoPunto.pendiente <= vehiculo.maxPendiente ? 'text-green-400' : 'text-red-400'" class="font-mono font-bold text-sm">
+              <span class="text-xs text-slate-400 uppercase block">Pendiente Local</span>
+              <span :class="sondeoPunto.pendiente <= vehiculo.maxPendiente ? 'text-emerald-400' : 'text-rose-400'" class="font-mono font-bold text-sm">
                 {{ sondeoPunto.pendiente }}°
               </span>
             </div>
             <div>
-              <span class="text-[9px] text-gray-400 uppercase block">Touchdown Safety</span>
-              <span :class="sondeoPunto.seguridadClase" class="font-bold text-[10px] block">
+              <span class="text-xs text-slate-400 uppercase block">Seguridad Alunizaje</span>
+              <span :class="sondeoPunto.seguridadClase" class="font-bold text-xs block">
                 {{ sondeoPunto.seguridad }}
               </span>
             </div>
             <div>
-              <span class="text-[9px] text-gray-400 uppercase block">Surface Temp (est.)</span>
+              <span class="text-xs text-slate-400 uppercase block">Temp Superficial (est.)</span>
               <span class="text-white font-mono font-bold text-sm">{{ sondeoPunto.temperatura }} K</span>
             </div>
-            <div class="col-span-2 pt-1 border-t border-white/5 text-[10px] text-gray-400">
-              Grid Cell: <span class="text-cyan-400 font-mono">[R: {{ sondeoPunto.fila }}, C: {{ sondeoPunto.col }}]</span>
+            <div class="col-span-2 pt-1 border-t border-white/5 text-xs text-slate-400">
+              Celda DEM: <span class="text-cyan-400 font-mono">[F: {{ sondeoPunto.fila }}, C: {{ sondeoPunto.col }}]</span>
             </div>
           </div>
         </div>
 
         <!-- BOTTOM-LEFT HUD -->
-        <div class="absolute bottom-6 left-6 backdrop-blur-md bg-black/75 border border-white/10 p-5 rounded-xl text-xs pointer-events-auto shadow-2xl">
+        <div class="absolute bottom-6 left-6 backdrop-blur-md bg-black/75 border border-white/10 p-4 rounded-xl text-xs pointer-events-auto shadow-2xl">
           <div v-if="sitioActivo" class="flex items-center gap-2 mb-3">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
-            <span class="font-bold text-white uppercase tracking-wider text-xs">GNC Approach: Candidate #{{ sitioActivo.rank }}</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping"></span>
+            <span class="font-bold text-white uppercase tracking-wider text-xs">Vector GNC: Candidato #{{ sitioActivo.rank }}</span>
           </div>
           <div v-else class="flex items-center gap-2 mb-3">
             <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-            <span class="font-bold text-white uppercase tracking-wider text-xs">South Polar Basin (320 km)</span>
+            <span class="font-bold text-white uppercase tracking-wider text-xs">Cuenca Polar Sur (320 km)</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-gray-300">
-            <p>Sun Elevation: <span class="text-yellow-400 font-mono font-bold">{{ efemerides.sol_el.toFixed(2) }}°</span></p>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-slate-300">
+            <p>Elevación Sol: <span class="text-amber-400 font-mono font-bold">{{ efemerides.sol_el.toFixed(2) }}°</span></p>
             <p>Temp (est.): <span class="text-white font-mono font-bold">{{ thermalTelemetria.kelvin }} K</span></p>
-            <p v-if="sitioActivo">GNC Clearance: <span class="text-green-400 font-mono font-bold">+{{ sitioActivo.gnc.minMarginM }} m</span></p>
-            <p v-if="sitioActivo">Sun (30 d): <span class="text-amber-400 font-mono font-bold">{{ sitioActivo.sol_pct }}%</span></p>
+            <p v-if="sitioActivo">Despeje GNC: <span :class="sitioActivo.gnc.clear ? 'text-emerald-400' : 'text-rose-400'" class="font-mono font-bold">+{{ sitioActivo.gnc.minMarginM }} m</span></p>
+            <p v-if="sitioActivo">Sol (30 d): <span class="text-slate-100 font-mono font-bold">{{ sitioActivo.sol_pct }}%</span></p>
           </div>
         </div>
       </div>
@@ -540,23 +675,28 @@
     <div v-if="mostrarModalComparador && sitiosSeleccionadosComparar.length === 2" class="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6" @click.self="mostrarModalComparador = false">
       <div class="bg-[#0f141f] border border-white/10 rounded-xl p-6 w-full max-w-3xl shadow-2xl">
         <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Side-by-side site comparison</h3>
-          <button @click="mostrarModalComparador = false" class="text-gray-400 hover:text-white cursor-pointer">✕</button>
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+            </svg>
+            Comparación Lado a Lado de Sitios
+          </h3>
+          <button @click="mostrarModalComparador = false" class="text-slate-400 hover:text-white cursor-pointer text-xs">✕</button>
         </div>
-        <table class="w-full text-xs text-gray-300">
-          <thead class="text-gray-400 uppercase text-[10px]">
-            <tr><th class="text-left p-2">Metric</th><th class="text-left p-2">Candidate #{{ sitiosSeleccionadosComparar[0].rank }}</th><th class="text-left p-2">Candidate #{{ sitiosSeleccionadosComparar[1].rank }}</th></tr>
+        <table class="w-full text-xs text-slate-300">
+          <thead class="text-slate-400 uppercase text-xs">
+            <tr><th class="text-left p-2">Métrica</th><th class="text-left p-2">Candidato #{{ sitiosSeleccionadosComparar[0].rank }}</th><th class="text-left p-2">Candidato #{{ sitiosSeleccionadosComparar[1].rank }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="fila in filasComparador" :key="fila.etiqueta" class="border-t border-white/5">
-              <td class="p-2 text-gray-400">{{ fila.etiqueta }}</td>
-              <td class="p-2 font-mono" :class="fila.mejor === 0 ? 'text-green-400 font-bold' : 'text-white'">{{ fila.a }}</td>
-              <td class="p-2 font-mono" :class="fila.mejor === 1 ? 'text-green-400 font-bold' : 'text-white'">{{ fila.b }}</td>
+              <td class="p-2 text-slate-400">{{ fila.etiqueta }}</td>
+              <td class="p-2 font-mono" :class="fila.mejor === 0 ? 'text-emerald-400 font-bold' : 'text-white'">{{ fila.a }}</td>
+              <td class="p-2 font-mono" :class="fila.mejor === 1 ? 'text-emerald-400 font-bold' : 'text-white'">{{ fila.b }}</td>
             </tr>
           </tbody>
         </table>
         <p class="mt-4 text-xs text-amber-300">{{ recomendacionComparador }}</p>
-        <p class="mt-1 text-[10px] text-gray-500">Recommendation = higher suitability score (60 % slope safety, 40 % 30-day Sun fraction). A decision aid, not a flight rule.</p>
+        <p class="mt-1 text-xs text-slate-400">Recomendación basada en mayor idoneidad (60% seguridad de pendiente, 40% fracción solar a 30 días). Ayuda a la decisión, no regla de vuelo.</p>
       </div>
     </div>
   </div>
@@ -643,8 +783,26 @@ const poisLegend = ref([
   { nombre: 'Amundsen Rim', lat: -84.0, lon: 85.0, tipo: 'ref', desc: 'Borde norte Amundsen' },
 ]);
 
-const leyendaVisible = ref(true);
-const leyendaFiltrada = computed(() => poisLegend.value);
+const poiMenuAbierto = ref(false);
+const busquedaPOI = ref('');
+const filtroTipoPOI = ref('todos');
+
+const poisFiltrados = computed(() => {
+  const q = busquedaPOI.value.trim().toLowerCase();
+  return poisLegend.value.filter(p => {
+    const matchTipo = filtroTipoPOI.value === 'todos' || p.tipo === filtroTipoPOI.value;
+    const matchTexto = !q || p.nombre.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q);
+    return matchTipo && matchTexto;
+  });
+});
+
+function seleccionarPOI(poi) {
+  navegarAPOI(poi);
+  poiMenuAbierto.value = false;
+}
+
+const leyendaVisible = ref(false);
+const leyendaFiltrada = computed(() => poisFiltrados.value);
 
 // Click-to-Probe State
 const sondeoPunto = ref(null);
@@ -751,6 +909,12 @@ onMounted(async () => {
     recalcularEfemérides();
     dibujarRadarHorizonte();
     animate();
+
+    window.addEventListener('click', () => {
+      if (poiMenuAbierto.value) {
+        poiMenuAbierto.value = false;
+      }
+    });
   } catch (err) {
     console.error("Error loading DEM binary:", err);
   }
