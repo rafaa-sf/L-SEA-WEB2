@@ -73,7 +73,7 @@ Topography: NASA LRO/LOLA (PGDA/PDS). Ephemeris reference for validation: JPL DE
 
 ## Changelog
 
-### 2026-10-11 — Post-hackathon fixes
+### 2026-10-11 
 
 - **Worker error flag reset** (`src/App.vue:720`): `auditPendiente` now cleared on worker `ERROR` so a later illumination request doesn't silently re-launch a full audit.
 - **Instant 3D probe click** (`src/App.vue:866-870`): Replaced the 8-million-triangle `THREE.Raycaster` with a single `ray.intersectPlane(groundPlane)` math intersection. Probe click is now instant and the marker Y uses the true DEM height.
