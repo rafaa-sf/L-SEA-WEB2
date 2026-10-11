@@ -36,16 +36,16 @@
     </header>
 
     <!-- POI LEGEND BAR (top, clickable navigation) -->
-    <div v-if="leyendaVisible" class="bg-[#0c1017] border-b border-white/10 px-4 py-2 z-20">
-      <div class="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-        <button @click="leyendaVisible = false" class="flex-shrink-0 text-gray-400 hover:text-white text-xs px-2 py-1" title="Ocultar leyenda">✕</button>
+    <div v-if="leyendaVisible" class="bg-[#0c1017] border-b border-white/10 px-4 py-2 z-30 pointer-events-auto">
+      <div class="flex items-center gap-3 overflow-x-auto scrollbar-hide" @click.stop @pointerdown.stop>
+        <button @click.stop="leyendaVisible = false" class="flex-shrink-0 text-gray-400 hover:text-white text-xs px-2 py-1" title="Ocultar leyenda">✕</button>
         <span class="flex-shrink-0 text-[10px] text-gray-500 uppercase font-bold tracking-wider">POI NAVIGATION</span>
         <div class="flex flex-wrap gap-1.5">
           <template v-for="poi in leyendaFiltrada" :key="poi.nombre">
             <button
-              @click="navegarAPOI(poi)"
+              @click.stop="navegarAPOI(poi)"
               :class="[
-                'px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap border',
+                'px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap border pointer-events-auto',
                 poi.tipo === 'psr' ? 'bg-blue-900/30 border-blue-500/30 text-cyan-300 hover:bg-blue-900/50' :
                 poi.tipo === 'mount' ? 'bg-amber-900/30 border-amber-500/30 text-amber-300 hover:bg-amber-900/50' :
                 poi.tipo === 'clps' ? 'bg-green-900/30 border-green-500/30 text-green-300 hover:bg-green-900/50' :
@@ -57,7 +57,7 @@
             </button>
           </template>
         </div>
-        <button @click="leyendaVisible = !leyendaVisible" class="flex-shrink-0 ml-auto text-gray-400 hover:text-white text-xs px-2 py-1" title="Mostrar/Ocultar">☰</button>
+        <button @click.stop="leyendaVisible = !leyendaVisible" class="flex-shrink-0 ml-auto text-gray-400 hover:text-white text-xs px-2 py-1" title="Mostrar/Ocultar">☰</button>
       </div>
     </div>
 
