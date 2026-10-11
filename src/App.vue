@@ -57,9 +57,15 @@
             </button>
           </template>
         </div>
-        <button @click.stop="leyendaVisible = !leyendaVisible" class="flex-shrink-0 ml-auto text-gray-400 hover:text-white text-xs px-2 py-1" title="Mostrar/Ocultar">☰</button>
       </div>
     </div>
+    <!-- Hamburger toggle (always visible) -->
+    <button 
+      v-else 
+      @click.stop="leyendaVisible = true" 
+      class="fixed top-16 right-4 z-30 backdrop-blur-md bg-black/75 border border-white/10 p-2 rounded-xl text-xs pointer-events-auto shadow-2xl text-gray-400 hover:text-white"
+      title="Mostrar leyenda POI"
+    >☰</button>
 
     <!-- MAIN WORKSPACE -->
     <div class="relative flex-1 overflow-hidden">
