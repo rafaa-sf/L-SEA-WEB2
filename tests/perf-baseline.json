@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-11",
+  "node": "v22.x",
+  "dem": { "rows": 4000, "cols": 4000, "mpc": 160, "bytes": 64000000, "headerBytes": 12 },
+  "renderLOD": { "decimate": 4, "renderVertices": 1000000, "renderTriangles": 2000000, "originalTriangles": 32000000 },
+  "results": {
+    "demLoadMs": 18,
+    "slopeMs": 275,
+    "horizonMs": 47,
+    "illumination30dMs": 2904,
+    "fullAuditMs": 2257
+  },
+  "memory": {
+    "heapUsedMb": 4.9,
+    "heapTotalMb": 38.0,
+    "externalMb": 308.3
+  }
+}

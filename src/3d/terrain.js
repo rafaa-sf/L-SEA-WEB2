@@ -1,25 +1,35 @@
 // ==============================================================================
-// src/3d/terrain.js (MALLA CON SOMBRAS)
+// src/3d/terrain.js (MALLA CON SOMBRAS + LOD opcional)
 // ==============================================================================
 import * as THREE from 'three';
 
-export function createTerrainMesh(demData, rows, cols, mpc, zScale = 1.0) {
+/** Crea malla de terreno. Si decimate > 1, usa una malla reducida para render
+ *  (p.ej. decimate=4 => 500x500 vértices desde 2000x2000).
+ *  El DEM original (demData) se mantiene intacto para cálculos físicos. */
+export function createTerrainMesh(demData, rows, cols, mpc, zScale = 1.0, decimate = 1) {
+    const stride = Math.max(1, Math.floor(decimate));
+    const renderRows = Math.max(2, Math.ceil(rows / stride));
+    const renderCols = Math.max(2, Math.ceil(cols / stride));
     const width = cols * mpc;
     const height = rows * mpc;
-    const geometry = new THREE.PlaneGeometry(width, height, cols - 1, rows - 1);
+    const geometry = new THREE.PlaneGeometry(width, height, renderCols - 1, renderRows - 1);
     
     geometry.rotateX(-Math.PI / 2);
 
     const vertices = geometry.attributes.position.array;
     
-    for (let i = 0, j = 0; i < vertices.length; i += 3, j++) {
-        vertices[i + 1] = (demData[j] || 0) * zScale; 
+    for (let i = 0, r = 0; r < renderRows; r++) {
+        const srcRow = Math.min(rows - 1, Math.round(r * stride));
+        for (let c = 0; c < renderCols; c++, i += 3) {
+            const srcCol = Math.min(cols - 1, Math.round(c * stride));
+            vertices[i + 1] = (demData[srcRow * cols + srcCol] || 0) * zScale;
+        }
     }
 
     geometry.computeVertexNormals(); 
 
     const material = new THREE.MeshStandardMaterial({
-        color: 0x666666, // Un gris ligeramente más claro para contrastar las sombras
+        color: 0x666666,
         roughness: 0.9,
         metalness: 0.0,
         flatShading: false 
@@ -27,7 +37,6 @@ export function createTerrainMesh(demData, rows, cols, mpc, zScale = 1.0) {
 
     const terrain = new THREE.Mesh(geometry, material);
     
-    // ACTIVAR SOMBRAS EN LA MALLA
     terrain.castShadow = true;
     terrain.receiveShadow = true;
     

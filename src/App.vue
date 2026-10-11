@@ -35,6 +35,32 @@
       </div>
     </header>
 
+    <!-- POI LEGEND BAR (top, clickable navigation) -->
+    <div v-if="leyendaVisible" class="bg-[#0c1017] border-b border-white/10 px-4 py-2 z-20">
+      <div class="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+        <button @click="leyendaVisible = false" class="flex-shrink-0 text-gray-400 hover:text-white text-xs px-2 py-1" title="Ocultar leyenda">✕</button>
+        <span class="flex-shrink-0 text-[10px] text-gray-500 uppercase font-bold tracking-wider">POI NAVIGATION</span>
+        <div class="flex flex-wrap gap-1.5">
+          <template v-for="poi in leyendaFiltrada" :key="poi.nombre">
+            <button
+              @click="navegarAPOI(poi)"
+              :class="[
+                'px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer whitespace-nowrap border',
+                poi.tipo === 'psr' ? 'bg-blue-900/30 border-blue-500/30 text-cyan-300 hover:bg-blue-900/50' :
+                poi.tipo === 'mount' ? 'bg-amber-900/30 border-amber-500/30 text-amber-300 hover:bg-amber-900/50' :
+                poi.tipo === 'clps' ? 'bg-green-900/30 border-green-500/30 text-green-300 hover:bg-green-900/50' :
+                'bg-purple-900/30 border-purple-500/30 text-purple-300 hover:bg-purple-900/50'
+              ]"
+              :title="poi.desc"
+            >
+              {{ poi.nombre }}
+            </button>
+          </template>
+        </div>
+        <button @click="leyendaVisible = !leyendaVisible" class="flex-shrink-0 ml-auto text-gray-400 hover:text-white text-xs px-2 py-1" title="Mostrar/Ocultar">☰</button>
+      </div>
+    </div>
+
     <!-- MAIN WORKSPACE -->
     <div class="relative flex-1 overflow-hidden">
 
@@ -579,6 +605,41 @@ let texturaElevation = null;
 let texturaSlope = null;
 let texturaIllumination = null;
 
+// POI Legend Bar (top of screen)
+const poisLegend = ref([
+  // Cráteres PSR
+  { nombre: 'Shackleton Crater', lat: -89.9, lon: 129.8, tipo: 'psr', desc: 'Polo sur, piso PSR, cresta iluminada' },
+  { nombre: 'Amundsen Crater', lat: -84.5, lon: 82.8, tipo: 'psr', desc: 'Gran cráter, piso permanentemente en sombra' },
+  { nombre: 'Faustini Crater', lat: -87.3, lon: 77.0, tipo: 'psr', desc: 'Candidato PSR, cerca del polo' },
+  { nombre: 'Shoemaker Crater', lat: -88.1, lon: 44.9, tipo: 'psr', desc: 'Piso PSR, homenaje a Gene Shoemaker' },
+  { nombre: 'Haworth Crater', lat: -87.5, lon: -5.0, tipo: 'psr', desc: 'Candidato PSR, borde oeste' },
+  { nombre: 'Nobile Crater', lat: -84.2, lon: -28.5, tipo: 'psr', desc: 'Región objetivo VIPER/CLPS' },
+  { nombre: 'Cabeus Crater', lat: -84.9, lon: -35.5, tipo: 'psr', desc: 'Impacto LCROSS, confirma hielo' },
+  { nombre: 'Sverdrup Crater', lat: -88.5, lon: -110.0, tipo: 'psr', desc: 'Cercano al polo, piso PSR' },
+  { nombre: 'de Gerlache Crater', lat: -88.3, lon: -85.0, tipo: 'psr', desc: 'Borde conecta con Shackleton' },
+
+  // Montes
+  { nombre: 'Malapert Mountain', lat: -86.0, lon: 0.1, tipo: 'mount', desc: 'Pico cuasi-permanentemente iluminado' },
+  { nombre: 'Leibnitz Beta', lat: -83.5, lon: 30.0, tipo: 'mount', desc: 'Macizo Leibniz, terreno alto' },
+  { nombre: 'Leibnitz Gamma', lat: -82.0, lon: 15.0, tipo: 'mount', desc: 'Macizo Leibniz, acceso a polo' },
+
+  // Sitios CLPS / Artemis
+  { nombre: 'Connecting Ridge', lat: -89.8, lon: 45.0, tipo: 'clps', desc: 'Cresta Shackleton–de Gerlache, objetivo Artemis' },
+  { nombre: 'Shackleton Rim A', lat: -89.7, lon: 0.0, tipo: 'clps', desc: 'Punto en borde Shackleton (0°)' },
+  { nombre: 'Shackleton Rim B', lat: -89.7, lon: 90.0, tipo: 'clps', desc: 'Punto en borde Shackleton (90°)' },
+  { nombre: 'Shackleton Rim C', lat: -89.7, lon: 180.0, tipo: 'clps', desc: 'Punto en borde Shackleton (180°)' },
+  { nombre: 'Shackleton Rim D', lat: -89.7, lon: 270.0, tipo: 'clps', desc: 'Punto en borde Shackleton (270°)' },
+  { nombre: 'Nobile Rim', lat: -84.0, lon: -30.0, tipo: 'clps', desc: 'Candidato VIPER/CLPS, acceso PSR' },
+  { nombre: 'Cabeus Rim', lat: -84.5, lon: -35.0, tipo: 'clps', desc: 'Borde Cabeus, cerca de confirmación hielo' },
+
+  // Referencia
+  { nombre: 'South Pole (90°S)', lat: -90.0, lon: 0.0, tipo: 'ref', desc: 'Polo geográfico exacto' },
+  { nombre: 'Amundsen Rim', lat: -84.0, lon: 85.0, tipo: 'ref', desc: 'Borde norte Amundsen' },
+]);
+
+const leyendaVisible = ref(true);
+const leyendaFiltrada = computed(() => poisLegend.value);
+
 // Click-to-Probe State
 const sondeoPunto = ref(null);
 let probeMarker = null;
@@ -634,8 +695,9 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 const RADIO_ORBITA_SOL = 250000;
-const ROWS = 2000, COLS = 2000, MPC = 160;
+let ROWS = 2000, COLS = 2000, MPC = 160; // fallback defaults, overwritten by DEM header
 const ILLUM_PASO = 8;   // rejilla gruesa del mapa de iluminación: 8 celdas = 1,28 km
+const TERRAIN_LOD_DECIMATE = 4; // 4 = 500x500 render mesh from 2000x2000 DEM (250k tris vs 8M)
 
 onMounted(async () => {
   sceneManager = initScene(canvas3d.value);
@@ -654,8 +716,12 @@ onMounted(async () => {
   }
 
   try {
-    demDataCache = await loadBinaryDEM('/data/lola_shackleton.bin');
-    terrenoMeshRef = createTerrainMesh(demDataCache, ROWS, COLS, MPC, 1.0);
+    const demResult = await loadBinaryDEM('/data/lola_shackleton.bin');
+    demDataCache = demResult.data;
+    ROWS = demResult.rows;
+    COLS = demResult.cols;
+    MPC = demResult.mpc;
+    terrenoMeshRef = createTerrainMesh(demDataCache, ROWS, COLS, MPC, 1.0, TERRAIN_LOD_DECIMATE);
     
     terrenoMeshRef.geometry.computeBoundingBox();
     terrenoMeshRef.geometry.boundingBox.getCenter(terrainCenter);
@@ -1156,6 +1222,38 @@ function inspeccionarSitio(sitio) {
   sceneManager.controls.update();
 }
 
+function navegarAPOI(poi) {
+  if (!sceneManager || !demDataCache) return;
+  const p = geoToPixel(poi.lat, poi.lon, ROWS, COLS, MPC);
+  const fila = Math.round(p.fila), col = Math.round(p.col);
+  if (fila < 0 || fila >= ROWS || col < 0 || col >= COLS) return;
+
+  // Update active point for telemetry
+  puntoActivo.value = { fila, col };
+  recalcularEfemérides();
+
+  // Switch to 3D view if not already
+  activeTab.value = 'viewer3d';
+
+  // Position camera
+  const x = (col - COLS / 2) * MPC;
+  const z = (fila - ROWS / 2) * MPC;
+  const y = (demDataCache[fila * COLS + col] || 0) - terrainCenter.y;
+
+  if (landingMarker) {
+    landingMarker.position.set(x, y, z);
+    landingMarker.visible = true;
+  }
+
+  sceneManager.controls.target.set(x, y, z);
+  sceneManager.camera.position.set(x, y + 5000, z + 10000);
+  sceneManager.controls.update();
+
+  // Highlight in legend (brief flash)
+  const btn = document.querySelector(`button[title="${poi.desc}"]`);
+  if (btn) { btn.style.boxShadow = '0 0 0 2px #f59e0b'; setTimeout(() => btn.style.boxShadow = '', 800); }
+}
+
 function exportMissionBrief() {
   const g = geoActivo();
   const dossier = {
@@ -1231,13 +1329,41 @@ function crearEtiquetaPOI(nombre, fila, col) {
 
 function crearPuntosDeInteresRegionales() {
   if (!demDataCache) return;
-  // Coordenadas aproximadas de catálogos públicos. Si una etiqueta no cae sobre su accidente,
-  // la orientación del mapa es la contraria: cambia ROW_DIR en src/core/geo.js.
+  // Coordenadas de catálogos NASA/IAU/USGS. Polo sur lunar (80°S–90°S).
+  // Incluye cráteres, montañas, sitios CLPS y PSR proxy.
   const pois = [
-    ['Shackleton Crater', -89.9, 129.8],
-    ['Malapert Mountain', -86.0, 0.1],
-    ['Faustini Crater', -87.3, 77.0],
-    ['Shoemaker Crater', -88.1, 44.9]
+    // Cráteres principales (PSR candidates)
+    ['Shackleton Crater', -89.9, 129.8],      // Polo sur, PSR floor
+    ['Amundsen Crater', -84.5, 82.8],         // Gran cráter, piso PSR
+    ['Scott Crater', -82.1, 53.2],            // Cerca del polo
+    ['Faustini Crater', -87.3, 77.0],         // PSR candidate
+    ['Shoemaker Crater', -88.1, 44.9],        // PSR floor
+    ['Haworth Crater', -87.5, -5.0],          // PSR candidate
+    ['Nobile Crater', -84.2, -28.5],          // VIPER landing site region
+    ['Cabeus Crater', -84.9, -35.5],          // LCROSS impact, PSR
+    ['Wiechert Crater', -85.5, -15.0],        // Degradado, piso plano
+    ['Sverdrup Crater', -88.5, -110.0],       // Cerca del polo
+    ['de Gerlache Crater', -88.3, -85.0],     // PSR rim
+    ['Idel\'son Crater', -81.5, -110.0],      // Borde 80°S
+
+    // Montes / Masas montañosas
+    ['Malapert Mountain', -86.0, 0.1],        // Pico iluminado, CLPS target
+    ['Leibnitz Beta', -83.5, 30.0],           // Macizo Leibniz
+    ['Leibnitz Gamma', -82.0, 15.0],          // Macizo Leibniz
+    ['Mons Malapert', -85.8, 355.0],          // Variante nombre Malapert
+
+    // Sitios de interés CLPS / Artemis
+    ['Connecting Ridge', -89.8, 45.0],        // Cresta Shackleton-de Gerlache
+    ['Shackleton Rim Point A', -89.7, 0.0],   // Punto en borde Shackleton
+    ['Shackleton Rim Point B', -89.7, 90.0],
+    ['Shackleton Rim Point C', -89.7, 180.0],
+    ['Shackleton Rim Point D', -89.7, 270.0],
+    ['Nobile Rim', -84.0, -30.0],             // Candidato VIPER/CLPS
+    ['Cabeus Rim', -84.5, -35.0],             // Acceso a PSR Cabeus
+
+    // Otros puntos notables
+    ['South Pole (90°S)', -90.0, 0.0],        // Polo geográfico exacto
+    ['Amundsen Rim', -84.0, 85.0],            // Borde norte Amundsen
   ];
   for (const [nombre, lat, lon] of pois) {
     const p = geoToPixel(lat, lon, ROWS, COLS, MPC);

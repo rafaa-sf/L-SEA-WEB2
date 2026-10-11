@@ -1,4 +1,4 @@
-# L-SEA · Lunar Site Evaluation Algorithm
+# L-SEA · Lunar Site Evaluation Algorithm v0.2.0 (2026-10-11)
 
 **🇬🇧 [English](#-english) · 🇪🇸 [Español](#-español)**
 
@@ -12,7 +12,9 @@ NASA Space Apps Challenge 2026 (Málaga) · Challenge: *CLPS Lunar Mission Brows
 
 ## What it does
 
-Given a real LRO/LOLA elevation map of the lunar south pole (320 km × 320 km, 160 m/cell), L-SEA tells you, for any point and date: how steep the terrain is, whether the Sun and the Earth are above the **terrain horizon** at that point, how much power a lander could make, and which candidate sites are the safest and best lit. It then ranks the Top 5.
+Given a real LRO/LOLA elevation map of the lunar south pole (**640 km × 640 km, 160 m/cell, 4000×4000 cells**), L-SEA tells you, for any point and date: how steep the terrain is, whether the Sun and the Earth are above the **terrain horizon** at that point, how much power a lander could make, and which candidate sites are the safest and best lit. It then ranks the Top 5.
+
+**New:** Clickable POI legend bar at top with 30+ labeled sites (PSR craters, mountains, CLPS/Artemis targets, reference points). Click any name to auto-navigate the 3D camera to that location.
 
 | Feature | How it is computed | Status |
 |---|---|---|
@@ -60,48 +62,18 @@ tests/verify.mjs           node tests/verify.mjs  (no dependencies)
 
 ```bash
 npm install
-python descargar_lola.py      # builds public/data/lola_shackleton.bin from the NASA PDS LDEM_80S_80M product
+python descargar_lola.py      # builds public/data/lola_shackleton.bin (640 km × 640 km, 4000×4000 @ 160 m)
 npm run dev                   # http://localhost:5173
 node tests/verify.mjs         # physics checks vs Skyfield/JPL reference values
 ```
 
 **Map orientation check (30 s).** Open the Elevation layer: Malapert Mountain (86°S, 0.1°E) must be ABOVE the map centre. If it is below, set `ROW_DIR = +1` in `src/core/geo.js`.
 
+**POI Legend:** Top bar shows 30+ sites (PSR craters = cyan, mountains = amber, CLPS/Artemis = green, reference = purple). Click any to fly there in 3D view.
+
 ## Credits
 
 Topography: NASA LRO/LOLA (PGDA/PDS). Ephemeris reference for validation: JPL DE421 via Skyfield. Orientation: IAU lunar rotation model (Archinal et al.). Series: Meeus, *Astronomical Algorithms*. Interface: Vue 3, Three.js, Vite.
-
-## Changelog
-
-### 2026-10-11 
-
-- **Worker error flag reset** (`src/App.vue:720`): `auditPendiente` now cleared on worker `ERROR` so a later illumination request doesn't silently re-launch a full audit.
-- **Instant 3D probe click** (`src/App.vue:866-870`): Replaced the 8-million-triangle `THREE.Raycaster` with a single `ray.intersectPlane(groundPlane)` math intersection. Probe click is now instant and the marker Y uses the true DEM height.
-- **Stale-state clearing on vehicle/footprint change** (`src/App.vue:939-948`): New `limpiarResultadosAuditoria()` clears cached slope texture, candidate sites, and comparator selection when the vehicle preset or safety footprint dropdown changes, so the table never shows scores from a different vehicle config.
-
-All physics tests (`node tests/verify.mjs`) still pass.
-
-## Future work / Nice to have
-
-| Area | Idea | Effort |
-|---|---|---|
-| **Physics** | JPL DE421/DE440 ephemerides via WASM (replace truncated Meeus) | Medium |
-| **Physics** | Diviner-based temperature model (thermal inertia, regolith conduction) | Large |
-| **Physics** | Penumbra / earthshine / terrain bounce in visibility | Medium |
-| **Physics** | Rover traverse planning (A* on slope + illumination cost map) | Large |
-| **Physics** | Distance to permanently shadowed regions (PSR) layer | Small |
-| **UI/UX** | Content-Security-Policy for Tauri build (`tauri.conf.json`) | Tiny |
-| **UI/UX** | Persist user preferences (vehicle, date, footprint) in `localStorage` | Tiny |
-| **UI/UX** | Keyboard shortcuts for sim play/pause, hour step, layer toggle | Tiny |
-| **Perf** | Web Worker transferable `ArrayBuffer` for 16 MB DEM (avoid structured-clone copy) | Small |
-| **Perf** | OffscreenCanvas for 30-day illumination texture generation | Medium |
-| **Data** | Auto-download & verify LOLA DEM on first run (check byte order, size) | Small |
-| **Data** | Git-ignore the 16 MB `public/data/lola_shackleton.bin` (regenerate via script) | Tiny |
-| **Code** | Delete dead Vite scaffolding (`src/components/HelloWorld.vue`, `hero.png`, `vite.svg`, `vue.svg`) | Tiny |
-| **Code** | Remove unused `buscar_ventanas_anuales` from `windows.js` | Tiny |
-| **Code** | Deduplicate slope calc: import `calculateSlopeDegrees` in `autopilot.worker.js` | Tiny |
-| **Deploy** | GitHub Actions: run `tests/verify.mjs` on every push | Tiny |
-| **Deploy** | Tauri build matrix (Linux/Windows/macOS) in CI | Medium |
 
 ---
 
@@ -109,7 +81,9 @@ All physics tests (`node tests/verify.mjs`) still pass.
 
 ## Qué hace
 
-Con un mapa real de elevación LRO/LOLA del polo sur lunar (320 km × 320 km, 160 m/celda), L-SEA dice para cualquier punto y fecha: cuánta pendiente hay, si el Sol y la Tierra están sobre el **horizonte del terreno**, cuánta potencia daría un módulo y qué sitios candidatos son más seguros y están mejor iluminados. Después clasifica el Top 5.
+Con un mapa real de elevación LRO/LOLA del polo sur lunar (**640 km × 640 km, 160 m/celda, 4000×4000 celdas**), L-SEA dice para cualquier punto y fecha: cuánta pendiente hay, si el Sol y la Tierra están sobre el **horizonte del terreno**, cuánta potencia daría un módulo y qué sitios candidatos son más seguros y están mejor iluminados. Después clasifica el Top 5.
+
+**Nuevo:** Barra de leyenda POI clicable arriba con 30+ sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = verde, referencia = púrpura). Click en cualquier nombre para navegar automáticamente en la vista 3D.
 
 La tabla de arriba resume cada función y cómo se calcula. Lo importante:
 
@@ -133,47 +107,15 @@ La tabla de arriba resume cada función y cómo se calcula. Lo importante:
 
 ```bash
 npm install
-python descargar_lola.py
-npm run dev
-node tests/verify.mjs
+python descargar_lola.py      # genera public/data/lola_shackleton.bin (640 km × 640 km, 4000×4000 @ 160 m)
+npm run dev                   # http://localhost:5173
+node tests/verify.mjs         # comprobaciones físicas vs Skyfield/JPL
 ```
 
 **Comprobación de orientación (30 s):** en la capa Elevation, Malapert (86°S, 0,1°E) debe estar ARRIBA del centro. Si está abajo, pon `ROW_DIR = +1` en `src/core/geo.js`.
 
+**Leyenda POI:** Barra superior con 30+ sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = verde, referencia = púrpura). Click para volar al sitio en vista 3D.
+
 ## Licencia
 
 [MIT](LICENSE).
-
-## Historial de cambios
-
-### 2026-10-11 — Correcciones post-hackathon
-
-- **Flag de reintento del worker** (`src/App.vue:720`): `auditPendiente` se limpia en el branch `ERROR` para que una petición de iluminación posterior no lance una auditoría completa sin querer.
-- **Click 3D instantáneo** (`src/App.vue:866-870`): Sustituido el `THREE.Raycaster` de 8 millones de triángulos por una única intersección matemática `ray.intersectPlane(planoSuelo)`. El click es instantáneo y el marcador usa la altura real del DEM.
-- **Limpieza de estado obsoleto al cambiar vehículo/huella** (`src/App.vue:939-948`): Nueva `limpiarResultadosAuditoria()` borra textura de pendiente cacheada, sitios candidatos y selección del comparador al cambiar el preset del vehículo o el dropdown de huella, así la tabla nunca muestra puntuaciones de otra configuración.
-
-Todos los tests físicos (`node tests/verify.mjs`) siguen pasando.
-
-## Trabajo futuro / Pendientes deseables
-
-| Área | Idea | Esfuerzo |
-|---|---|---|
-| **Física** | Efemérides JPL DE421/DE440 vía WASM (reemplazar Meeus truncado) | Medio |
-| **Física** | Modelo térmico basado en Diviner (inercia térmica, conducción regolito) | Grande |
-| **Física** | Penumbra / brillo terrestre / rebote en terreno en visibilidad | Medio |
-| **Física** | Planificación de rutas de rover (A* sobre coste pendiente + iluminación) | Grande |
-| **Física** | Capa de distancia a regiones permanentemente en sombra (PSR) | Pequeño |
-| **UI/UX** | Content-Security-Policy para build Tauri (`tauri.conf.json`) | Mínimo |
-| **UI/UX** | Persistir preferencias de usuario (vehículo, fecha, huella) en `localStorage` | Mínimo |
-| **UI/UX** | Atajos de teclado para play/pausa sim, paso hora, toggle capas | Mínimo |
-| **Rendimiento** | `ArrayBuffer` transferible al Worker para los 16 MB DEM (evita copia structured-clone) | Pequeño |
-| **Rendimiento** | OffscreenCanvas para generación de textura de iluminación 30 días | Medio |
-| **Datos** | Auto-descarga y verificación LOLA DEM en primera ejecución (check byte-order, tamaño) | Pequeño |
-| **Datos** | Git-ignore del `public/data/lola_shackleton.bin` de 16 MB (regenerar via script) | Mínimo |
-| **Código** | Borrar scaffolding Vite muerto (`src/components/HelloWorld.vue`, `hero.png`, `vite.svg`, `vue.svg`) | Mínimo |
-| **Código** | Eliminar `buscar_ventanas_anuales` sin usar de `windows.js` | Mínimo |
-| **Código** | Desduplicar cálculo pendiente: importar `calculateSlopeDegrees` en `autopilot.worker.js` | Mínimo |
-| **Deploy** | GitHub Actions: ejecutar `tests/verify.mjs` en cada push | Mínimo |
-| **Deploy** | Matriz de build Tauri (Linux/Windows/macOS) en CI | Medio |
-
----

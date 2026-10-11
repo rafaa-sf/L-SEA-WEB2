@@ -8,6 +8,7 @@ import { calculateHorizonProfile, calculateProjectedShadows, isTargetVisible, cl
 import { calcular_potencia_electrica, telemetria_dsn, estacionActivaDSN } from '../src/core/power.js';
 import { calculateRadiativeEquilibrium, evaluateGlideslopeCorridor } from '../src/core/nasa_suite.js';
 import { iluminacionMensual } from '../src/core/illumination.js';
+import { R_LUNA, DEG2RAD, RAD2DEG } from '../src/core/geo.js';
 
 const fx = JSON.parse(fs.readFileSync(new URL('./fixtures.json', import.meta.url)));
 let fallos = 0;
@@ -95,6 +96,33 @@ for (let r = 0; r < nCrater; r++) for (let c = 0; c < nCrater; c++) { const d = 
 const ic = iluminacionMensual(crater, nCrater, nCrater, 160, new Date('2026-10-10T00:00:00Z'), 8, 5, 12);
 const centro = ic.data[10 * ic.nc + 10], borde = ic.data[0];
 ok(centro <= borde, `fondo de un cráter profundo recibe menos Sol que el terreno llano (${centro.toFixed(2)} <= ${borde.toFixed(2)})`);
+
+console.log('8) Tamaños de malla variables (synthetic DEM)');
+const ramp = (rows, cols, mpc, slopeDeg) => {
+  const dz = Math.tan(slopeDeg * DEG2RAD) * mpc;
+  const dem = new Float32Array(rows * cols);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) dem[r * cols + c] = c * dz;
+  return { dem, expected: slopeDeg };
+};
+for (const [rows, cols, mpc, slopeDeg] of [
+  [500, 500, 320, 5.0],
+  [1000, 1000, 80, 10.0],
+  [2000, 2000, 40, 15.0],
+]) {
+  const { dem, expected } = ramp(rows, cols, mpc, slopeDeg);
+  const sl = calculateSlopeDegrees(dem, rows, cols, mpc);
+  const mid = sl[Math.floor(rows/2) * cols + Math.floor(cols/2)];
+  ok(Math.abs(mid - expected) < 0.05, `${rows}x${cols} @ ${mpc}m: pendiente ${mid.toFixed(2)}° (esperado ${expected}°)`);
+}
+
+console.log('9) Factor de escala estereográfico polar (L-SEA usa mpc constante)');
+const R_LUNA_LOCAL = R_LUNA;
+for (const lat of [-90.0, -88.0, -86.0, -84.72]) {
+  const theta = (-lat - 90.0) * DEG2RAD; // colatitud desde polo sur
+  const rho = 2 * R_LUNA_LOCAL * Math.tan(theta / 2);
+  const k = 1 / Math.cos(theta / 2) ** 2; // factor de escala real
+  ok(Math.abs(k - 1.0) < 0.01, `lat ${lat}°: factor escala k = ${k.toFixed(4)} (error <1%)`);
+}
 
 console.log(fallos === 0 ? '\nTODO OK' : `\n${fallos} FALLO(S)`);
 process.exit(fallos === 0 ? 0 : 1);
