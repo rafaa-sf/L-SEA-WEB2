@@ -131,7 +131,7 @@
               </div>
               <div>
                 <label class="block text-[11px] text-gray-400 mb-1">Safety Footprint</label>
-                <select v-model.number="radioHuellaMetros" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-xs text-amber-400 font-bold">
+                <select v-model.number="radioHuellaMetros" @change="limpiarResultadosAuditoria" class="w-full bg-black/50 border border-white/10 rounded p-1.5 text-xs text-amber-400 font-bold">
                   <option :value="320">320 m</option>
                   <option :value="480">480 m</option>
                   <option :value="640">640 m</option>
@@ -716,6 +716,7 @@ function handleWorkerMessage(e) {
   } else if (data.type === 'ERROR') {
     console.error("Worker computation failed:", data.error);
     calculando.value = false;
+    auditPendiente = false;
     alert("Computation error: " + data.error);
   }
 }
@@ -864,36 +865,35 @@ function onCanvasClick(e) {
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(mouse, sceneManager.camera);
-  const intersects = raycaster.intersectObject(terrenoMeshRef, false);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const p = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(plane, p)) return;
 
-  if (intersects.length > 0) {
-    const p = intersects[0].point;
-    const col = Math.round(((p.x + terrainCenter.x) / MPC) + COLS / 2);
-    const fila = Math.round(((p.z + terrainCenter.z) / MPC) + ROWS / 2);
+  const col = Math.round(((p.x + terrainCenter.x) / MPC) + COLS / 2);
+  const fila = Math.round(((p.z + terrainCenter.z) / MPC) + ROWS / 2);
 
-    if (fila >= 1 && fila < ROWS - 1 && col >= 1 && col < COLS - 1) {
-      const alt = Math.round(demDataCache[fila * COLS + col] || 0);
-      const loc = gradienteLocal(demDataCache, ROWS, COLS, MPC, fila, col);
-      const pend = Math.round(loc.slope * 10) / 10;
-      const cls = clasificarPendiente(pend, vehiculo.value.maxPendiente);
+  if (fila >= 1 && fila < ROWS - 1 && col >= 1 && col < COLS - 1) {
+    const alt = Math.round(demDataCache[fila * COLS + col] || 0);
+    const loc = gradienteLocal(demDataCache, ROWS, COLS, MPC, fila, col);
+    const pend = Math.round(loc.slope * 10) / 10;
+    const cls = clasificarPendiente(pend, vehiculo.value.maxPendiente);
 
-      // La telemetría (Sol, Tierra, horizonte, térmica, DSN) pasa a ser la de ESTE punto
-      puntoActivo.value = { fila, col };
-      recalcularEfemérides();
+    // La telemetría (Sol, Tierra, horizonte, térmica, DSN) pasa a ser la de ESTE punto
+    puntoActivo.value = { fila, col };
+    recalcularEfemérides();
 
-      sondeoPunto.value = {
-        fila,
-        col,
-        altura: alt,
-        pendiente: pend,
-        temperatura: thermalTelemetria.value.kelvin,
-        seguridad: cls.texto,
-        seguridadClase: cls.clase
-      };
+    sondeoPunto.value = {
+      fila,
+      col,
+      altura: alt,
+      pendiente: pend,
+      temperatura: thermalTelemetria.value.kelvin,
+      seguridad: cls.texto,
+      seguridadClase: cls.clase
+    };
 
-      probeMarker.position.set(p.x, p.y, p.z);
-      probeMarker.visible = true;
-    }
+    probeMarker.position.set(p.x, alt - terrainCenter.y, p.z);
+    probeMarker.visible = true;
   }
 }
 
@@ -936,8 +936,15 @@ function cambiarCapaGIS(tipo) {
   }
 }
 
+function limpiarResultadosAuditoria() {
+  texturaSlope = null;
+  sitiosCandidatos.value = [];
+  sitiosSeleccionadosComparar.value = [];
+}
+
 function aplicarPresetVehiculo() {
   vehiculo.value = { ...PRESETS_VEHICULOS[vehiculoSeleccionado.value] };
+  limpiarResultadosAuditoria();
   recalcularEfemérides();
 }
 
