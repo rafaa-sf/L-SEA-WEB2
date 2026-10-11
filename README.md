@@ -71,6 +71,38 @@ node tests/verify.mjs         # physics checks vs Skyfield/JPL reference values
 
 Topography: NASA LRO/LOLA (PGDA/PDS). Ephemeris reference for validation: JPL DE421 via Skyfield. Orientation: IAU lunar rotation model (Archinal et al.). Series: Meeus, *Astronomical Algorithms*. Interface: Vue 3, Three.js, Vite.
 
+## Changelog
+
+### 2026-10-11 — Post-hackathon fixes
+
+- **Worker error flag reset** (`src/App.vue:720`): `auditPendiente` now cleared on worker `ERROR` so a later illumination request doesn't silently re-launch a full audit.
+- **Instant 3D probe click** (`src/App.vue:866-870`): Replaced the 8-million-triangle `THREE.Raycaster` with a single `ray.intersectPlane(groundPlane)` math intersection. Probe click is now instant and the marker Y uses the true DEM height.
+- **Stale-state clearing on vehicle/footprint change** (`src/App.vue:939-948`): New `limpiarResultadosAuditoria()` clears cached slope texture, candidate sites, and comparator selection when the vehicle preset or safety footprint dropdown changes, so the table never shows scores from a different vehicle config.
+
+All physics tests (`node tests/verify.mjs`) still pass.
+
+## Future work / Nice to have
+
+| Area | Idea | Effort |
+|---|---|---|
+| **Physics** | JPL DE421/DE440 ephemerides via WASM (replace truncated Meeus) | Medium |
+| **Physics** | Diviner-based temperature model (thermal inertia, regolith conduction) | Large |
+| **Physics** | Penumbra / earthshine / terrain bounce in visibility | Medium |
+| **Physics** | Rover traverse planning (A* on slope + illumination cost map) | Large |
+| **Physics** | Distance to permanently shadowed regions (PSR) layer | Small |
+| **UI/UX** | Content-Security-Policy for Tauri build (`tauri.conf.json`) | Tiny |
+| **UI/UX** | Persist user preferences (vehicle, date, footprint) in `localStorage` | Tiny |
+| **UI/UX** | Keyboard shortcuts for sim play/pause, hour step, layer toggle | Tiny |
+| **Perf** | Web Worker transferable `ArrayBuffer` for 16 MB DEM (avoid structured-clone copy) | Small |
+| **Perf** | OffscreenCanvas for 30-day illumination texture generation | Medium |
+| **Data** | Auto-download & verify LOLA DEM on first run (check byte order, size) | Small |
+| **Data** | Git-ignore the 16 MB `public/data/lola_shackleton.bin` (regenerate via script) | Tiny |
+| **Code** | Delete dead Vite scaffolding (`src/components/HelloWorld.vue`, `hero.png`, `vite.svg`, `vue.svg`) | Tiny |
+| **Code** | Remove unused `buscar_ventanas_anuales` from `windows.js` | Tiny |
+| **Code** | Deduplicate slope calc: import `calculateSlopeDegrees` in `autopilot.worker.js` | Tiny |
+| **Deploy** | GitHub Actions: run `tests/verify.mjs` on every push | Tiny |
+| **Deploy** | Tauri build matrix (Linux/Windows/macOS) in CI | Medium |
+
 ---
 
 # 🇪🇸 Español
@@ -111,3 +143,37 @@ node tests/verify.mjs
 ## Licencia
 
 [MIT](LICENSE).
+
+## Historial de cambios
+
+### 2026-10-11 — Correcciones post-hackathon
+
+- **Flag de reintento del worker** (`src/App.vue:720`): `auditPendiente` se limpia en el branch `ERROR` para que una petición de iluminación posterior no lance una auditoría completa sin querer.
+- **Click 3D instantáneo** (`src/App.vue:866-870`): Sustituido el `THREE.Raycaster` de 8 millones de triángulos por una única intersección matemática `ray.intersectPlane(planoSuelo)`. El click es instantáneo y el marcador usa la altura real del DEM.
+- **Limpieza de estado obsoleto al cambiar vehículo/huella** (`src/App.vue:939-948`): Nueva `limpiarResultadosAuditoria()` borra textura de pendiente cacheada, sitios candidatos y selección del comparador al cambiar el preset del vehículo o el dropdown de huella, así la tabla nunca muestra puntuaciones de otra configuración.
+
+Todos los tests físicos (`node tests/verify.mjs`) siguen pasando.
+
+## Trabajo futuro / Pendientes deseables
+
+| Área | Idea | Esfuerzo |
+|---|---|---|
+| **Física** | Efemérides JPL DE421/DE440 vía WASM (reemplazar Meeus truncado) | Medio |
+| **Física** | Modelo térmico basado en Diviner (inercia térmica, conducción regolito) | Grande |
+| **Física** | Penumbra / brillo terrestre / rebote en terreno en visibilidad | Medio |
+| **Física** | Planificación de rutas de rover (A* sobre coste pendiente + iluminación) | Grande |
+| **Física** | Capa de distancia a regiones permanentemente en sombra (PSR) | Pequeño |
+| **UI/UX** | Content-Security-Policy para build Tauri (`tauri.conf.json`) | Mínimo |
+| **UI/UX** | Persistir preferencias de usuario (vehículo, fecha, huella) en `localStorage` | Mínimo |
+| **UI/UX** | Atajos de teclado para play/pausa sim, paso hora, toggle capas | Mínimo |
+| **Rendimiento** | `ArrayBuffer` transferible al Worker para los 16 MB DEM (evita copia structured-clone) | Pequeño |
+| **Rendimiento** | OffscreenCanvas para generación de textura de iluminación 30 días | Medio |
+| **Datos** | Auto-descarga y verificación LOLA DEM en primera ejecución (check byte-order, tamaño) | Pequeño |
+| **Datos** | Git-ignore del `public/data/lola_shackleton.bin` de 16 MB (regenerar via script) | Mínimo |
+| **Código** | Borrar scaffolding Vite muerto (`src/components/HelloWorld.vue`, `hero.png`, `vite.svg`, `vue.svg`) | Mínimo |
+| **Código** | Eliminar `buscar_ventanas_anuales` sin usar de `windows.js` | Mínimo |
+| **Código** | Desduplicar cálculo pendiente: importar `calculateSlopeDegrees` en `autopilot.worker.js` | Mínimo |
+| **Deploy** | GitHub Actions: ejecutar `tests/verify.mjs` en cada push | Mínimo |
+| **Deploy** | Matriz de build Tauri (Linux/Windows/macOS) en CI | Medio |
+
+---
