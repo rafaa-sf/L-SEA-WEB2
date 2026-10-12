@@ -885,7 +885,7 @@ const filasComparador = computed(() => {
     f('GNC margin (m)', a.gnc.minMarginM, b.gnc.minMarginM, true),
     f('Sun, 30 days (%)', a.sol_pct, b.sol_pct, true),
     f('Earth line of sight, 30 days (%)', a.dte_pct, b.dte_pct, true),
-    f('Temp estimate (K)', a.termica.kelvin, b.termica.kelvin, true),
+    f('Temp estimate (K)', a.termica.kelvin, b.termica.kelvin, false),
     { etiqueta: 'Elevation (m)', a: a.altura, b: b.altura, mejor: -1 },
     { etiqueta: 'Latitude / longitude', a: a.lat.toFixed(2) + '° / ' + a.lon.toFixed(1) + '°', b: b.lat.toFixed(2) + '° / ' + b.lon.toFixed(1) + '°', mejor: -1 }
   ];
@@ -937,9 +937,12 @@ function onCanvasClick(e) {
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(mouse, sceneManager.camera);
-  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  const p = new THREE.Vector3();
-  if (!raycaster.ray.intersectPlane(plane, p)) return;
+  terrenoMeshRef.updateMatrixWorld();
+  // Raycast contra la malla real, no contra un plano y=0: el relieve del cráter desplaza
+  // el punto varios km a lo largo del rayo y el plano acierta la celda equivocada.
+  const hits = raycaster.intersectObject(terrenoMeshRef);
+  if (!hits.length) return;
+  const p = hits[0].point;
 
   const col = Math.round(((p.x + terrainCenter.x) / MPC) + COLS / 2);
   const fila = Math.round(((p.z + terrainCenter.z) / MPC) + ROWS / 2);

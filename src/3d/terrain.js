@@ -10,11 +10,18 @@ export function createTerrainMesh(demData, rows, cols, mpc, zScale = 1.0, decima
     const stride = Math.max(1, Math.floor(decimate));
     const renderRows = Math.max(2, Math.ceil(rows / stride));
     const renderCols = Math.max(2, Math.ceil(cols / stride));
-    const width = cols * mpc;
-    const height = rows * mpc;
+    // El plano debe medir (vertices-1)*paso, no rows*mpc: con N vertices y N-1 segmentos
+    // THREE reparte el ancho en width/gridX, y ese paso extra desalinea cada vertice de
+    // su celda del DEM. El raycast y los marcadores usan x = (col - cols/2)*mpc, asi que
+    // luego hay que desplazarlo: la rejilla del DEM va de -cols/2 a +cols/2-1, y
+    // PlaneGeometry deja el plano centrado en el origen.
+    const paso = stride * mpc;
+    const width = (renderCols - 1) * paso;
+    const height = (renderRows - 1) * paso;
     const geometry = new THREE.PlaneGeometry(width, height, renderCols - 1, renderRows - 1);
-    
+
     geometry.rotateX(-Math.PI / 2);
+    geometry.translate((width - cols * mpc) / 2, 0, (height - rows * mpc) / 2);
 
     const vertices = geometry.attributes.position.array;
     
