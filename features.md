@@ -1,4 +1,4 @@
-# L-SEA Feature Inventory (v0.2.0)
+# L-SEA Feature Inventory
 
 *Last updated: 2026-10-15*
 
@@ -164,4 +164,3 @@ Every limit below is declared in the source, with the constant or line that enfo
 | 11 | Autopilot audit skips an 8 % border of the DEM so the safety footprint stays inside the grid, and returns 15 candidates before the main-thread Top-5 refinement | 8 %, POOL = 15 | `src/core/autopilot.worker.js:9,49` |
 | 12 | All timing is UTC; daily visibility and the monthly map sample once per day at 12:00 UTC | — | `src/core/illumination.js:20`, `src/core/windows.js:13` |
 
-**Not implemented (explicitly out of scope for the 48 h):** rover traverse planning, PSR distance metrics, atmospheric refraction in DSN elevations.

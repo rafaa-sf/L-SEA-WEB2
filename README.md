@@ -1,4 +1,4 @@
-# L-SEA · Lunar Site Evaluation Algorithm v0.2.0 (2026-10-11)
+# L-SEA · Lunar Site Evaluation Algorithm
 
 **🇬🇧 [English](#-english) · 🇪🇸 [Español](#-español)**
 
