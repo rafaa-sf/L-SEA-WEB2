@@ -85,16 +85,89 @@ export function evaluateGlideslopeCorridor(dem, rows, cols, mpc, row, col,
     };
 }
 
-/** TRN: contraste óptico según la elevación solar. Umbrales ILUSTRATIVOS, no oficiales. */
-export function evaluateTrnFeasibility(solarElevation) {
-    if (solarElevation <= 0.8) {
-        return { score: 10, status: 'NO-GO (BLIND)', detail: 'Full shadows prevent crater feature tracking' };
-    } else if (solarElevation <= 8.5) {
-        return { score: 98, status: 'OPTIMAL', detail: 'Long shadows give strong relief contrast' };
-    } else if (solarElevation <= 15.0) {
-        return { score: 75, status: 'MARGINAL', detail: 'Relief shadows fading progressively' };
+// ---- TRN (navegación relativa al terreno) ------------------------------------
+// El score mezcla dos cosas: relieve MEDIDO en el DEM (¿hay rasgos que seguir?)
+// y contraste por sombras, que es una curva SUPUESTA sobre la elevación solar.
+export const TRN_WINDOW_CELLS = 8;          // ventana 17x17 celdas alrededor del punto activo (cota fija)
+export const TRN_SLOPE_FULL_DEG = 8.0;      // SUPUESTO: pendiente media a la que el relieve ya es "rico" para TRN
+export const TRN_RELIEF_MIN = 0.15;         // suelo: sin rasgos que seguir no hay nada que correlacionar
+export const TRN_SUN_BLIND = 0.8;           // SUPUESTO: por debajo, el suelo está todo en sombra
+export const TRN_SUN_OPTIMAL = 3.0;         // SUPUESTO: elevación de máximo contraste (sombras largas del terminador polar)
+export const TRN_SUN_FLAT = 15.0;           // SUPUESTO: a partir de aquí el Sol aplana el relieve
+
+/** Contraste por sombras (curva supuesta, interpolada linealmente entre los cortes). */
+function trnShadowFactor(solarElevation) {
+    if (solarElevation <= TRN_SUN_BLIND) return 0.10;
+    if (solarElevation <= TRN_SUN_OPTIMAL) {
+        return 0.40 + 0.60 * (solarElevation - TRN_SUN_BLIND) / (TRN_SUN_OPTIMAL - TRN_SUN_BLIND);
     }
-    return { score: 45, status: 'DEGRADED', detail: 'High Sun flattens optical reference points' };
+    if (solarElevation <= TRN_SUN_FLAT) {
+        return 1.0 - 0.25 * (solarElevation - TRN_SUN_OPTIMAL) / (TRN_SUN_FLAT - TRN_SUN_OPTIMAL);
+    }
+    return Math.max(0.45, 0.75 - 0.30 * (solarElevation - TRN_SUN_FLAT) / 30.0);
+}
+
+/**
+ * TRN: ¿puede el descenso guiarse comparando el terreno que ve con el mapa?
+ * score = relieve_medido × contraste_solar, ambos en 0..1:
+ *   - relieve: pendiente media (gradiente central) de una ventana de 17x17 celdas,
+ *     normalizada por TRN_SLOPE_FULL_DEG: mide si hay relieve que correlacionar;
+ *   - contraste: curva supuesta de la elevación solar (sombras largas ayudan, Sol alto aplana).
+ * A igualdad de Sol el score cambia con el terreno: un llano no da referencias.
+ * Devuelve NO DATA (explícito) si el DEM o la posición no son válidos.
+ */
+export function evaluateTrnFeasibility(dem, rows, cols, mpc, row, col, solarElevation) {
+    if (!dem || !Number.isFinite(solarElevation) || rows < 3 || cols < 3 || mpc <= 0 ||
+        !Number.isFinite(row) || !Number.isFinite(col) || row < 0 || row >= rows || col < 0 || col >= cols) {
+        return { score: 0, status: 'NO DATA', detail: 'DEM or active point out of range', relief: 0, sunFactor: 0, meanSlopeDeg: 0 };
+    }
+
+    // la posición puede llegar fraccionaria (click en la malla 3D): se indexa con enteros
+    const rp = Math.min(rows - 2, Math.max(1, Math.round(row)));
+    const cp = Math.min(cols - 2, Math.max(1, Math.round(col)));
+    const r0 = Math.max(1, rp - TRN_WINDOW_CELLS), r1 = Math.min(rows - 2, rp + TRN_WINDOW_CELLS);
+    const c0 = Math.max(1, cp - TRN_WINDOW_CELLS), c1 = Math.min(cols - 2, cp + TRN_WINDOW_CELLS);
+    let celdas = 0, sumaPendiente = 0;
+
+    for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) {
+            const dzdx = (dem[r * cols + c + 1] - dem[r * cols + c - 1]) / (2 * mpc);
+            const dzdrow = (dem[(r + 1) * cols + c] - dem[(r - 1) * cols + c]) / (2 * mpc);
+            celdas++;
+            sumaPendiente += Math.atan(Math.hypot(dzdx, dzdrow)) * (180.0 / Math.PI);
+        }
+    }
+
+    const pendienteMedia = celdas > 0 ? sumaPendiente / celdas : 0;
+    const relief = Math.min(1.0, Math.max(TRN_RELIEF_MIN, pendienteMedia / TRN_SLOPE_FULL_DEG));
+    const sunFactor = trnShadowFactor(solarElevation);
+    const score = Math.round(100 * relief * sunFactor);
+    const ventanaKm = ((2 * TRN_WINDOW_CELLS + 1) * mpc / 1000).toFixed(1);
+    const pendienteTxt = pendienteMedia.toFixed(1);
+
+    let status, detail;
+    if (solarElevation <= TRN_SUN_BLIND) {
+        status = 'NO-GO (BLIND)';
+        detail = 'Full shadows prevent crater feature tracking';
+    } else if (score >= 70) {
+        status = 'OPTIMAL';
+        detail = `Solid relief (${pendienteTxt}° mean slope over the ${ventanaKm} km window) + long shadows`;
+    } else if (score >= 50) {
+        status = 'MARGINAL';
+        detail = `Relief ${pendienteTxt}° over the ${ventanaKm} km window, contrast fading`;
+    } else if (relief > TRN_RELIEF_MIN) {
+        status = 'DEGRADED';
+        detail = `Relief is there (${pendienteTxt}°), but this Sun angle flattens it`;
+    } else {
+        status = 'DEGRADED';
+        detail = `Little relief (${pendienteTxt}° mean slope over the ${ventanaKm} km window): few features to match`;
+    }
+    return {
+        score, status, detail,
+        relief: Math.round(relief * 100) / 100,
+        sunFactor: Math.round(sunFactor * 100) / 100,
+        meanSlopeDeg: Math.round(pendienteMedia * 10) / 10
+    };
 }
 
 /**

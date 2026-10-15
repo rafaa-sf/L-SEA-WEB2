@@ -29,7 +29,7 @@ Given a real LRO/LOLA elevation map of the lunar south pole (**640 km × 640 km,
 | Glideslope corridor | Straight 12° line, 1.5–20 km, fixed approach azimuth, with curvature | ⚠️ simplification (assumptions below) |
 | Power (EPS) | `cos(elevation)` for a vertical Sun-facing panel (or `sin` for a horizontal one) | ⚠️ assumption: vertical panel |
 | Temperature | Instantaneous radiative equilibrium on the local slope facing the Sun | ⚠️ estimate; no regolith conduction; **not** Diviner data |
-| TRN, libration risk | Threshold rules | ⚠️ illustrative thresholds |
+| TRN, libration risk | TRN score = terrain relief **measured** on the DEM × assumed shadow curve; libration = threshold rules | ⚠️ relief measured, Sun curve illustrative |
 | Mission brief export | JSON including the assumptions list | ✅ |
 
 ## Assumptions and limits (read before quoting a number)
@@ -38,7 +38,7 @@ Given a real LRO/LOLA elevation map of the lunar south pole (**640 km × 640 km,
 - Earth/Moon positions come from **truncated** Meeus series (about 0.05° in elevation), not JPL ephemerides.
 - The 30-day Sun map is coarse (1.28 km cells; block-maximum obstacles, conservative toward shadow). It cannot resolve small shadows.
 - In the 3D view the Sun is one parallel light with the elevation computed at the **active point**; far from it, curvature makes the real direction differ.
-- Vehicle presets, the 10° DSN mask, TRN and libration thresholds and the approach azimuth are **illustrative assumptions**.
+- Vehicle presets, the 10° DSN mask, the TRN Sun-contrast curve, libration thresholds and the approach azimuth are **illustrative assumptions** (the TRN relief term itself is measured on the DEM).
 - Slope limits are configurable, not official mission values.
 - The Sun is a disc (limb rule) but there is no penumbra, earthshine or terrain bounce.
 - Not implemented (earlier drafts claimed it): rover traverse planning and distance to permanently shadowed regions.
@@ -99,7 +99,7 @@ La tabla de arriba resume cada función y cómo se calcula. Lo importante:
 - Series de Meeus **truncadas** (≈ 0,05° en elevación), no efemérides JPL.
 - Mapa de iluminación grueso (1,28 km): no resuelve sombras pequeñas.
 - En 3D el Sol es una luz paralela con la elevación del punto activo.
-- Presets de vehículo, máscara DSN de 10°, umbrales TRN/libración y azimut de aproximación: **supuestos ilustrativos**.
+- Presets de vehículo, máscara DSN de 10°, curva solar del TRN, umbrales de libración y azimut de aproximación: **supuestos ilustrativos** (el término de relieve del TRN sí se mide sobre el DEM).
 - Panel solar vertical orientado al Sol (supuesto); la temperatura es un equilibrio radiativo instantáneo, sin conducción, y **no** son datos de Diviner.
 - No implementado: ruta del rover y distancia a regiones en sombra permanente.
 

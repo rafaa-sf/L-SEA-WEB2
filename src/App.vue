@@ -280,7 +280,7 @@
               </span>
             </div>
             <p class="text-sm font-bold text-white mt-1 uppercase">{{ trnTelemetria.status }}</p>
-            <p class="text-xs text-slate-400 mt-1.5">{{ trnTelemetria.detail }} · umbrales ilustrativos</p>
+            <p class="text-xs text-slate-400 mt-1.5">{{ trnTelemetria.detail }} · relieve medido + curva solar ilustrativa</p>
           </div>
 
           <div class="bg-[#0f141f] border border-white/10 rounded-xl p-3.5 shadow-xl flex flex-col justify-between">
@@ -1265,7 +1265,7 @@ function recalcularEfemérides() {
 
   const loc = gradienteLocal(demDataCache, ROWS, COLS, MPC, puntoActivo.value.fila, puntoActivo.value.col);
   thermalTelemetria.value = calculateRadiativeEquilibrium({ solEl: ef.sol_el, solAz: ef.sol_az, dzdx: loc.dzdx, dzdrow: loc.dzdrow, sunVisible: solVis });
-  trnTelemetria.value = evaluateTrnFeasibility(ef.sol_el);
+  trnTelemetria.value = evaluateTrnFeasibility(demDataCache, ROWS, COLS, MPC, puntoActivo.value.fila, puntoActivo.value.col, ef.sol_el);
 
   const idxAz = ((Math.round(ef.tierra_az) % 360) + 360) % 360;
   libracionTelemetria.value = evaluateLibrationRisk(ef.tierra_el - horizonteActivo[idxAz], tierraVis);

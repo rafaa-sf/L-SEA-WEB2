@@ -122,7 +122,7 @@ graph TD
 | `illumination.js` | `iluminacionMensual(...)`: mapa de fraccion de Sol a 30 dias con trazado de sombras. Depende de `geo.js` + `astro.js`. |
 | `windows.js` | `visibilidadDiaria` / `buscar_ventanas_anuales`: ventanas de iluminacion por celda y fecha. Depende de `astro.js`, `engine.js`, `geo.js`. |
 | `power.js` | EPS y DSN: `calcular_potencia_electrica`, `telemetria_dsn` (Madrid/Goldstone/Canberra), `estacionActivaDSN`. Depende de `astro.js`. |
-| `nasa_suite.js` | Suite de aterrizaje CLPS: equilibrio radiativo, corredor de glideslope, viabilidad TRN y riesgo de libracion. Depende de `geo.js`. |
+| `nasa_suite.js` | Suite de aterrizaje CLPS: equilibrio radiativo, corredor de glideslope, viabilidad TRN (relieve medido en el DEM × curva solar supuesta) y riesgo de libracion. Depende de `geo.js`. |
 | `autopilot.worker.js` | Web Worker del autopilot: coordina iluminacion + glideslope fuera del hilo principal y devuelve candidatos rankeados. |
 
 ### Tests

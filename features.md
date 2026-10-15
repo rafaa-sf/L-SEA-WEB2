@@ -64,7 +64,7 @@
 |---------|-------------|
 | **Radiative Temperature** | Instant equilibrium on sloped surface facing Sun (no regolith conduction) |
 | **Glideslope Corridor** | Straight 12° line, 1.5–20 km, fixed approach azimuth, with curvature |
-| **TRN Feasibility** | Optical contrast score based on Sun elevation (illustrative thresholds) |
+| **TRN Feasibility** | Score = measured terrain relief (mean slope over a 17×17-cell window) × assumed shadow-contrast curve vs Sun elevation |
 | **Libration/Link Margin** | Earth elevation over terrain horizon at its azimuth |
 
 ---
@@ -157,7 +157,7 @@ Every limit below is declared in the source, with the constant or line that enfo
 | 5 | Map scale is a constant metres-per-cell; the polar stereographic scale factor is not applied (error < 1 % to lat −84.72°) | k ≤ 1.0021 | `src/core/geo.js`, `tests/verify.mjs` §9 |
 | 6 | Observation mast: +2 m over the sampled cell value for the horizon, and the same +2 m offset for the illumination observer | +2.0 m | `src/core/illumination.js:37`, `src/core/windows.js:13` |
 | 7 | Temperature is instantaneous radiative equilibrium on the sloped facet — no regolith conduction, no thermal inertia, and not Diviner. Shadowed ground is clamped to an assumed floor | T_MIN = 40 K | `src/core/nasa_suite.js:19-27` |
-| 8 | Vehicle presets, DSN elevation mask, TRN thresholds and libration risk bands are illustrative, not official | DSN mask 10.0° | `src/core/power.js:17`, `src/core/nasa_suite.js:88-93` |
+| 8 | Vehicle presets, DSN elevation mask, the TRN Sun-contrast curve and the libration risk bands are illustrative, not official. The TRN relief term is measured from the DEM, only its Sun curve is assumed | DSN mask 10.0° | `src/core/power.js:17`, `src/core/nasa_suite.js:91-96,118` |
 | 9 | Descent corridor is a straight line at a fixed glideslope and the same approach azimuth for every site | 270.0°, 12.0° | `src/core/nasa_suite.js:12-13` |
 | 10 | One DEM at a time (hard-coded `/data/lola_shackleton.bin`); no mosaicking. The loader rejects header/size mismatches instead of failing silently | 4000×4000 @ 160 m | `src/App.vue:883`, `src/3d/loader.js:14-24` |
 | 11 | Autopilot audit skips an 8 % border of the DEM so the safety footprint stays inside the grid, and returns 15 candidates before the main-thread Top-5 refinement | 8 %, POOL = 15 | `src/core/autopilot.worker.js:9,49` |

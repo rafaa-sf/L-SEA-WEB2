@@ -6,7 +6,7 @@ import { calcularEfemeridesMeeus, lunaDesdeEstacion, RADIO_SOL } from '../src/co
 import { pixelToGeo, geoToPixel, caidaCurvatura, ROW_DIR } from '../src/core/geo.js';
 import { calculateHorizonProfile, calculateProjectedShadows, isTargetVisible, clasificarPendiente, calculateSlopeDegrees } from '../src/core/engine.js';
 import { calcular_potencia_electrica, telemetria_dsn, estacionActivaDSN } from '../src/core/power.js';
-import { calculateRadiativeEquilibrium, evaluateGlideslopeCorridor } from '../src/core/nasa_suite.js';
+import { calculateRadiativeEquilibrium, evaluateGlideslopeCorridor, evaluateTrnFeasibility } from '../src/core/nasa_suite.js';
 import { iluminacionMensual } from '../src/core/illumination.js';
 import { R_LUNA, DEG2RAD, RAD2DEG } from '../src/core/geo.js';
 
@@ -191,6 +191,26 @@ for (let k = 0; k < 48; k++) {
 }
 ok(impactos > 20 && peor < 12,
    `raycast cenital: ${impactos}/48 impactos, peor desfase ${peor.toFixed(2)} m (< 12 m, interpolacion de la malla decimada)`);
+
+console.log('11) TRN: el score depende del relieve medido, no solo del Sol');
+const NT = 121, trnLlano = new Float32Array(NT * NT), trnRugoso = new Float32Array(NT * NT);
+for (let r = 0; r < NT; r++) for (let c = 0; c < NT; c++) {
+  trnRugoso[r * NT + c] = c * 8.0 + ((r % 4 < 2) ? 0 : 60);   // rampa 11,3° + dientes de sierra
+}
+const trnLlano6 = evaluateTrnFeasibility(trnLlano, NT, NT, 40, 60, 60, 6.0);
+const trnRugoso6 = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 60, 60, 6.0);
+ok(trnRugoso6.score > trnLlano6.score + 40, `mismo Sol (6°): relieve ${trnRugoso6.score}% vs llano ${trnLlano6.score}%`);
+ok(trnLlano6.status === 'DEGRADED' && trnRugoso6.status === 'OPTIMAL', `estados coherentes: llano ${trnLlano6.status}, rugoso ${trnRugoso6.status}`);
+const trnCiego = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 60, 60, 0.5);
+ok(trnCiego.status === 'NO-GO (BLIND)' && trnCiego.score < 50, `Sol 0,5°: ${trnCiego.status} (${trnCiego.score}%)`);
+const trnAlto = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 60, 60, 30.0);
+ok(trnAlto.score < trnRugoso6.score, `Sol alto aplana el contraste: 30° ${trnAlto.score}% < 6° ${trnRugoso6.score}%`);
+const trnBorde = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 0, 0, 6.0);
+ok(trnBorde.score > 0 && Number.isFinite(trnBorde.score), `en la esquina del DEM la ventana se recorta sin salirse (${trnBorde.score}%)`);
+const trnFrac = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 60.4, 60.6, 6.0);
+ok(trnFrac.score === trnRugoso6.score, `posición fraccionaria (click 3D) da el mismo score que la celda redondeada (${trnFrac.score}%)`);
+ok(evaluateTrnFeasibility(trnRugoso, NT, NT, 40, NT + 5, 60, 6).status === 'NO DATA', 'posición fuera del DEM: NO DATA, sin recortar en silencio');
+ok(evaluateTrnFeasibility(null, NT, NT, 40, 60, 60, 6).status === 'NO DATA', 'sin DEM: NO DATA explícito, no un score inventado');
 
 console.log(fallos === 0 ? '\nTODO OK' : `\n${fallos} FALLO(S)`);
 process.exit(fallos === 0 ? 0 : 1);
