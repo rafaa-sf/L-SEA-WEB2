@@ -1,6 +1,6 @@
 # L-SEA Feature Inventory (v0.2.0)
 
-*Last updated: 2026-10-13*
+*Last updated: 2026-10-15*
 
 ---
 
@@ -20,9 +20,10 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Sun Position** | Truncated Meeus series + IAU lunar rotation (validated ≤ 0.003° vs JPL DE421) |
-| **Earth Position** | Same pipeline (validated ≤ 0.06° elevation, ≤ 0.24° azimuth) |
-| **Moon-from-Earth** | Topocentric elevation/azimuth for DSN sites (WGS84, parallax) — validated ≤ 0.07° |
+| **Sun Position** | Truncated Meeus series + IAU lunar rotation. Max error vs Skyfield/JPL DE421 over the 30 bundled fixtures: 0.003° elevation, 0.003° azimuth |
+| **Earth Position** | Same pipeline. Max error over the same fixtures: 0.062° elevation, 0.236° azimuth |
+| **Moon-from-Earth** | Topocentric elevation/azimuth for DSN sites (WGS84, parallax, geometric — no refraction). Max error over 36 fixtures: 0.067° elevation, 0.153° azimuth |
+| **Declared Precision** | The fixtures are a bounded sample; the series' own truncation bound is looser (~0.05° elevation, 0.1–0.3° azimuth). Not sub-arcsecond — see `src/core/astro.js:6-8` and the limit table below |
 | **Per-Point Ephemerides** | Each map point uses its own lat/lon/heading for Sun/Earth vectors |
 
 ---
@@ -53,7 +54,7 @@
 | **Safety Footprint Audit** | Anti-cliff check: max slope within configurable radius (320/480/640 m) |
 | **Scoring** | `60% safety + 40% 30-day Sun fraction` |
 | **Non-Maximum Suppression** | Spatial separation of candidates (40-cell radius) |
-| **Top 5 Refinement** | Main thread re-scores with exact horizon + per-site ephemerides |
+| **Top 5 Refinement** | Worker returns 15 candidates; main thread re-scores them with the exact horizon and per-site ephemerides, then keeps 5 |
 
 ---
 
@@ -115,21 +116,22 @@
 
 ## Validation & Testing
 
-| Item | Description |
-|------|-------------|
-| **Node Verify Suite** | `tests/verify.mjs` — physics checks vs Skyfield/JPL DE421 reference values |
-| **Analytic Benchmarks** | Ramp/wall cases for slope & horizon |
+`node tests/verify.mjs` — zero dependencies, exits non-zero on any failed check. Ten sections:
 
----
+| # | Section | What it proves |
+|---|---------|----------------|
+| 1 | Sun / Earth vs JPL | Elevation & azimuth vs Skyfield + DE421 (30 fixtures) |
+| 2 | DSN geometry | Moon topocentric el/az from Madrid, Goldstone, Canberra (36 fixtures, no refraction) |
+| 3 | Map geometry | lat/lon ↔ pixel round-trip; curvature drop 2878 m at 100 km |
+| 4 | Horizon & shadows | Analytic 250 m wall at 5 km; curvature lowers the horizon; visibility rule |
+| 5 | Slope, power, thermal | 7 m/40 m ramp; vertical vs horizontal panel; orientation-dependent temperature; determinism |
+| 6 | Glideslope corridor | Flat terrain clear; 1.5 km mountain in the path blocks it |
+| 7 | Monthly illumination | Deep synthetic crater floor stays darker than the surrounding plain |
+| 8 | Mesh sizes | 500/1000/2000-cell DEMs at 320/80/40 m recover the analytic slope |
+| 9 | Polar scale factor | Stereographic scale error < 1 % down to lat −84.72° |
+| 10 | Mesh ↔ grid alignment | 0/76924 vertices off-cell; click-to-probe raycast offset < 12 m |
 
-## Key Assumptions / Limits
-
-- ⚠️ Truncated Meeus series (≈0.05° error in elevation), not JPL ephemerides
-- ⚠️ 30-day map is coarse (1.28 km), conservative toward shadow
-- ⚠️ 3D Sun is parallel light at active point elevation (curvature ignored far away)
-- ⚠️ Vehicle specs, DSN 10° mask, TRN/libration thresholds, approach azimuth = illustrative
-- ⚠️ Temperature = instantaneous radiative equilibrium (no regolith conduction, not Diviner)
-- ❌ Not implemented: rover traverse planning, PSR distance metrics
+Reference values live in `tests/fixtures.json` (Skyfield + JPL DE421).
 
 ---
 
@@ -139,3 +141,26 @@
 - **3D**: Three.js (ACES tone mapping, PCF shadows, OrbitControls)
 - **Worker**: Native ES module Web Worker for heavy computation
 - **Data**: Binary Float32Array DEM (4000×4000 = 64 MB)
+
+---
+
+## Assumptions & Limits
+
+Every limit below is declared in the source, with the constant or line that enforces it. Nothing is approximated silently.
+
+| # | Assumption / limit | Value | Source |
+|---|--------------------|-------|--------|
+| 1 | Ephemerides are truncated Meeus + IAU lunar rotation, not JPL. Fixture-measured error is 0.003°–0.24° (see above), but the truncation bound the code claims is looser: ~0.05° elevation, 0.1–0.3° azimuth | — | `src/core/astro.js:6-8` |
+| 2 | Monthly illumination is coarse: 1 sample per day at a fixed UTC hour, block-maximum obstacles (conservative toward shadow), Sun treated as a disc (upper limb) | step 8 cells × 160 m = 1.28 km | `src/core/illumination.js:10-12,20` |
+| 3 | Candidate scoring inherits that 1.28 km resolution — the coarse cell is resampled per candidate with `floor(r/paso)` | — | `src/core/autopilot.worker.js:21-25,71-75` |
+| 4 | The 3D Sun is one directional light set to the active point's Sun vector; curvature of the light direction away from that point is ignored | 4096² shadow map | `src/3d/scene.js:35-43` |
+| 5 | Map scale is a constant metres-per-cell; the polar stereographic scale factor is not applied (error < 1 % to lat −84.72°) | k ≤ 1.0021 | `src/core/geo.js`, `tests/verify.mjs` §9 |
+| 6 | Observation mast: +2 m over the sampled cell value for the horizon, and the same +2 m offset for the illumination observer | +2.0 m | `src/core/illumination.js:37`, `src/core/windows.js:13` |
+| 7 | Temperature is instantaneous radiative equilibrium on the sloped facet — no regolith conduction, no thermal inertia, and not Diviner. Shadowed ground is clamped to an assumed floor | T_MIN = 40 K | `src/core/nasa_suite.js:19-27` |
+| 8 | Vehicle presets, DSN elevation mask, TRN thresholds and libration risk bands are illustrative, not official | DSN mask 10.0° | `src/core/power.js:17`, `src/core/nasa_suite.js:88-93` |
+| 9 | Descent corridor is a straight line at a fixed glideslope and the same approach azimuth for every site | 270.0°, 12.0° | `src/core/nasa_suite.js:12-13` |
+| 10 | One DEM at a time (hard-coded `/data/lola_shackleton.bin`); no mosaicking. The loader rejects header/size mismatches instead of failing silently | 4000×4000 @ 160 m | `src/App.vue:883`, `src/3d/loader.js:14-24` |
+| 11 | Autopilot audit skips an 8 % border of the DEM so the safety footprint stays inside the grid, and returns 15 candidates before the main-thread Top-5 refinement | 8 %, POOL = 15 | `src/core/autopilot.worker.js:9,49` |
+| 12 | All timing is UTC; daily visibility and the monthly map sample once per day at 12:00 UTC | — | `src/core/illumination.js:20`, `src/core/windows.js:13` |
+
+**Not implemented (explicitly out of scope for the 48 h):** rover traverse planning, PSR distance metrics, atmospheric refraction in DSN elevations.
