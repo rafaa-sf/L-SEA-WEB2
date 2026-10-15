@@ -14,16 +14,16 @@ NASA Space Apps Challenge 2026 (Málaga) · Challenge: *CLPS Lunar Mission Brows
 
 Given a real LRO/LOLA elevation map of the lunar south pole (**640 km × 640 km, 160 m/cell, 4000×4000 cells**), L-SEA tells you, for any point and date: how steep the terrain is, whether the Sun and the Earth are above the **terrain horizon** at that point, how much power a lander could make, and which candidate sites are the safest and best lit. It then ranks the Top 5.
 
-**New:** Clickable POI legend bar at top with 30+ labeled sites (PSR craters, mountains, CLPS/Artemis targets, reference points). Click any name to auto-navigate the 3D camera to that location.
+**New:** Clickable POI legend bar at top with 29 labeled sites (PSR craters, mountains, CLPS/Artemis targets, reference points). Click any name to auto-navigate the 3D camera to that location.
 
 | Feature | How it is computed | Status |
 |---|---|---|
 | Slope | arctan of the central-difference gradient, real scale | ✅ validated on analytic ramp |
-| 360° horizon | Ray tracing from the lander (mast per vehicle) **with lunar curvature** (d²/2R) | ✅ matches a reference implementation (358/360 azimuths within 0.3°) |
+| 360° horizon | Ray tracing from the lander (mast per vehicle) **with lunar curvature** (d²/2R) | ✅ in-repo test: analytic 250 m wall at 5 km + curvature term (`tests/verify.mjs` §4) |
 | Sun & Earth position | Truncated Meeus series + IAU lunar rotation, **evaluated at the active point** (its own lat/lon/heading) | ✅ vs Skyfield/JPL DE421: Sun ≤ 0.003°, Earth elevation ≤ 0.06°, azimuth ≤ 0.24° |
 | Visibility | One rule everywhere: elevation (+0.267° for the Sun's limb) > terrain horizon at that azimuth | ✅ |
 | Deep Space Network | Real topocentric Moon elevation over Madrid, Goldstone and Canberra (WGS84, parallax) | ✅ vs Skyfield: ≤ 0.07°. Link mask 10° is an assumption |
-| 30-day Sun fraction map | Per-cell Sun position + shadow ray tracing, 1 sample/day, coarse 1.28 km grid | ✅ computed on demand in a Web Worker (~1 s) |
+| 30-day Sun fraction map | Per-cell Sun position + shadow ray tracing, 1 sample/day, coarse 1.28 km grid | ✅ computed on demand in a Web Worker (~3 s for 30 days at 1.28 km, measured on the real DEM) |
 | Autopilot | Slope-footprint safety (anti-cliff) + 30-day Sun fraction → score = 60 % safety + 40 % Sun; non-maximum suppression; Top 5 re-scored per site with exact horizon/ephemerides | ✅ |
 | Site comparator | Side-by-side table of two candidates | ✅ |
 | Glideslope corridor | Straight 12° line, 1.5–20 km, fixed approach azimuth, with curvature | ⚠️ simplification (assumptions below) |
@@ -69,7 +69,7 @@ node tests/verify.mjs         # physics checks vs Skyfield/JPL reference values
 
 **Map orientation check (30 s).** Open the Elevation layer: Malapert Mountain (86°S, 0.1°E) must be ABOVE the map centre. If it is below, set `ROW_DIR = +1` in `src/core/geo.js`.
 
-**POI Legend:** Top bar shows 30+ sites (PSR craters = cyan, mountains = amber, CLPS/Artemis = green, reference = purple). Click any to fly there in 3D view.
+**POI Legend:** Top bar lists 21 sites (PSR craters = cyan, mountains = amber, CLPS/Artemis = indigo, reference = grey); the 3D view draws 25 labels (29 distinct sites in total). Click any to fly there in 3D view.
 
 ## Credits
 
@@ -83,7 +83,7 @@ Topography: NASA LRO/LOLA (PGDA/PDS). Ephemeris reference for validation: JPL DE
 
 Con un mapa real de elevación LRO/LOLA del polo sur lunar (**640 km × 640 km, 160 m/celda, 4000×4000 celdas**), L-SEA dice para cualquier punto y fecha: cuánta pendiente hay, si el Sol y la Tierra están sobre el **horizonte del terreno**, cuánta potencia daría un módulo y qué sitios candidatos son más seguros y están mejor iluminados. Después clasifica el Top 5.
 
-**Nuevo:** Barra de leyenda POI clicable arriba con 30+ sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = verde, referencia = púrpura). Click en cualquier nombre para navegar automáticamente en la vista 3D.
+**Nuevo:** Barra de leyenda POI clicable arriba con 21 sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = índigo, referencia = gris); la vista 3D etiqueta 25 (29 sitios distintos en total). Click en cualquier nombre para navegar automáticamente en la vista 3D.
 
 La tabla de arriba resume cada función y cómo se calcula. Lo importante:
 
@@ -114,7 +114,7 @@ node tests/verify.mjs         # comprobaciones físicas vs Skyfield/JPL
 
 **Comprobación de orientación (30 s):** en la capa Elevation, Malapert (86°S, 0,1°E) debe estar ARRIBA del centro. Si está abajo, pon `ROW_DIR = +1` en `src/core/geo.js`.
 
-**Leyenda POI:** Barra superior con 30+ sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = verde, referencia = púrpura). Click para volar al sitio en vista 3D.
+**Leyenda POI:** Barra superior con 21 sitios (cráteres PSR = cian, montes = ámbar, CLPS/Artemis = índigo, referencia = gris) y 25 etiquetas en la vista 3D (29 sitios distintos). Click para volar al sitio en vista 3D.
 
 ## Licencia
 

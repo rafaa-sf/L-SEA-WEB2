@@ -34,7 +34,7 @@
 |---------|-------------|
 | **Coarse Grid (1.28 km)** | 1 sample/day, block-maximum obstacles (conservative) |
 | **Real Shadow Ray-Tracing** | Per-cell Sun position + horizon test with lunar curvature |
-| **Web Worker Computation** | Off-main-thread (~1 s for 30 days) |
+| **Web Worker Computation** | Off-main-thread, ~3 s for 30 days at the shipped 1.28 km grid (`paso = 8`, real 4000×4000 DEM, measured 2026-10-15) |
 
 ---
 
@@ -83,10 +83,10 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Terrain Mesh** | 4000×4000 DEM → decimated 500×500 render mesh (LOD) with shadows |
+| **Terrain Mesh** | 4000×4000 DEM → decimated 1000×1000 render mesh (LOD, stride 4) with shadows |
 | **Scientific Layers** | PBR regolith / Hypsometric elevation / Slope risk / 30-day illumination |
 | **Click-to-Probe** | Raycast against actual terrain mesh → instant telemetry panel |
-| **POI Navigation** | 30+ labeled sites (PSR craters, mountains, CLPS/Artemis targets) with search/filter |
+| **POI Navigation** | 29 distinct labeled sites (21 in the legend bar + 25 3D labels, 17 shared): PSR craters, mountains, CLPS/Artemis targets, with search/filter |
 | **Camera Fly-To** | Auto-navigate to any POI or candidate site |
 
 ---
@@ -116,7 +116,7 @@
 
 ## Validation & Testing
 
-`node tests/verify.mjs` — zero dependencies, exits non-zero on any failed check. Ten sections:
+`node tests/verify.mjs` — zero dependencies, exits non-zero on any failed check. Eleven sections:
 
 | # | Section | What it proves |
 |---|---------|----------------|
@@ -130,6 +130,7 @@
 | 8 | Mesh sizes | 500/1000/2000-cell DEMs at 320/80/40 m recover the analytic slope |
 | 9 | Polar scale factor | Stereographic scale error < 1 % down to lat −84.72° |
 | 10 | Mesh ↔ grid alignment | 0/76924 vertices off-cell; click-to-probe raycast offset < 12 m |
+| 11 | TRN relief | Same Sun, the rough window scores > 40 points above the flat one; 30° Sun flattens the contrast; invalid DEM/position returns NO DATA |
 
 Reference values live in `tests/fixtures.json` (Skyfield + JPL DE421).
 

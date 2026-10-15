@@ -861,7 +861,7 @@ const mouse = new THREE.Vector2();
 const RADIO_ORBITA_SOL = 250000;
 let ROWS = 2000, COLS = 2000, MPC = 160; // fallback defaults, overwritten by DEM header
 const ILLUM_PASO = 8;   // rejilla gruesa del mapa de iluminación: 8 celdas = 1,28 km
-const TERRAIN_LOD_DECIMATE = 4; // 4 = 500x500 render mesh from 2000x2000 DEM (250k tris vs 8M)
+const TERRAIN_LOD_DECIMATE = 4; // 4 = 1000x1000 render mesh from the 4000x4000 DEM (~2.0M tris vs ~32M)
 
 onMounted(async () => {
   sceneManager = initScene(canvas3d.value);
