@@ -178,7 +178,29 @@ export function direccionesLunar(fechaObj) {
     const lunaTierra = tierraLuna.map(x => -x);
     const lunaSol = [tierraSol[0] - tierraLuna[0], tierraSol[1] - tierraLuna[1], tierraSol[2] - tierraLuna[2]];
 
-    return { sol: multiplyMatrixVector(R, lunaSol), tierra: multiplyMatrixVector(R, lunaTierra) };
+    const solKm = Math.hypot(lunaSol[0], lunaSol[1], lunaSol[2]);
+    const tierraKm = Math.hypot(lunaTierra[0], lunaTierra[1], lunaTierra[2]);
+
+    return {
+        sol: multiplyMatrixVector(R, lunaSol),
+        tierra: multiplyMatrixVector(R, lunaTierra),
+        solKm,
+        tierraKm
+    };
+}
+
+// =========================================================== FLUJO SOLAR REAL
+export const AU_KM = 149597870.7;
+
+/**
+ * Irradiancia solar en la Luna para una distancia Sol-Luna dada (km).
+ * Sale de la serie de Meeus, asi que el flujo varia con la distancia real
+ * (perihelio +3.4 %, afelio -3.3 %) y no es la constante de folleto.
+ */
+export function flujoSolar(distanciaKm) {
+    if (!(distanciaKm > 0)) return CONSTANTE_SOLAR;
+    const ratio = AU_KM / distanciaKm;
+    return CONSTANTE_SOLAR * ratio * ratio;
 }
 
 /** Azimut/elevación (°) de un vector lunar visto desde un punto con base local dada. */
@@ -200,7 +222,15 @@ export function calcularEfemeridesMeeus(fechaObj, lat, lon, rumbo = 0.0) {
     const base = base_local(lat, lon);
     const sol = azElLocal(dir.sol, base, rumbo);
     const tierra = azElLocal(dir.tierra, base, rumbo);
-    return { sol_az: sol.az, sol_el: sol.el, tierra_az: tierra.az, tierra_el: tierra.el };
+    return {
+        sol_az: sol.az,
+        sol_el: sol.el,
+        tierra_az: tierra.az,
+        tierra_el: tierra.el,
+        sol_km: dir.solKm,
+        tierra_km: dir.tierraKm,
+        flujo: flujoSolar(dir.solKm)
+    };
 }
 
 // =========================================================== LUNA DESDE UNA ESTACIÓN DE LA TIERRA
@@ -241,5 +271,5 @@ export function lunaDesdeEstacion(fechaObj, latDeg, lonEsteDeg) {
     const el = Math.asin(dot(topo, arriba) / norm) * RAD2DEG;
     let az = Math.atan2(dot(topo, este), dot(topo, norte)) * RAD2DEG;
     if (az < 0) az += 360;
-    return { el, az };
+    return { el, az, km: norm };
 }

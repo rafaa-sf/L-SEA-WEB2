@@ -18,10 +18,11 @@ export const RADIO_SOL = 0.267;
  *   T = [ (1-A)·S·cos(i) / (ε·σ) ]^(1/4),   cos(i) = n·s   (n: normal, s: dirección del Sol)
  * Ignora la conducción en el regolito y la inercia térmica (el suelo real tarda en calentarse
  * y enfriarse). Suelo mínimo de 40 K: SUPUESTO ilustrativo para zonas en sombra.
+ * `flux` llega de la efeméride (distancia Sol-Luna real); si no, constante solar.
  */
-export function calculateRadiativeEquilibrium({ solEl, solAz, dzdx = 0, dzdrow = 0, sunVisible = true }) {
+export function calculateRadiativeEquilibrium({ solEl, solAz, dzdx = 0, dzdrow = 0, sunVisible = true, flux = 1361.0 }) {
     const STEFAN_BOLTZMANN = 5.67037e-8;
-    const SOLAR_FLUX = 1361.0;
+    const SOLAR_FLUX = flux;
     const ALBEDO = 0.12;
     const EMISSIVITY = 0.95;
     const T_MIN = 40.0;

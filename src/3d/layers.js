@@ -79,6 +79,74 @@ export function generateSlopeTexture(slopes, rows, cols, maxSlope = 8.0) {
 }
 
 /**
+ * Shaded relief albedo. The Sun at the lunar south pole never rises more than
+ * ~2 deg, so a physically faithful directional light rakes the terrain into a
+ * flat black plate with no readable shape. This bakes a hillshade from the DEM
+ * with a fixed illustrative sun (NW, 30 deg) and keeps the real illumination
+ * physics where it belongs: the illumination layer and the Sun fraction column.
+ */
+export function generateReliefTexture(dem, rows, cols, mpc, sunAzDeg = 315, sunElDeg = 30) {
+    const size = 1024;
+    const data = new Uint8Array(size * size * 4);
+    const stepR = rows / size;
+    const stepC = cols / size;
+    const dx = mpc;
+    const dz = mpc;
+    const exaggeration = 3.5;
+
+    const az = (sunAzDeg * Math.PI) / 180;
+    const el = (sunElDeg * Math.PI) / 180;
+    const lx = Math.sin(az) * Math.cos(el);
+    const ly = Math.sin(el);
+    const lz = -Math.cos(az) * Math.cos(el);
+
+    const at = (r, c) => dem[Math.min(rows - 1, r) * cols + Math.min(cols - 1, c)] || 0;
+
+    // pass 1: raw lambert term per pixel, collected so the range can be stretched
+    const shade = new Float32Array(size * size);
+    const altitude = new Float32Array(size * size);
+    let lo = Infinity;
+    let hi = -Infinity;
+
+    for (let r = 0; r < size; r++) {
+        const demR = Math.min(rows - 2, Math.floor(((size - 1 - r) / size) * rows));
+        for (let c = 0; c < size; c++) {
+            const demC = Math.min(cols - 2, Math.floor((c / size) * cols));
+            const dhdx = ((at(demR, demC + 1) - at(demR, demC)) / dx) * exaggeration;
+            const dhdz = ((at(demR + 1, demC) - at(demR, demC)) / dz) * exaggeration;
+            const n = Math.sqrt(dhdx * dhdx + dhdz * dhdz + 1);
+            const v = (-dhdx * lx + ly - dhdz * lz) / n;
+            const i = r * size + c;
+            shade[i] = v;
+            altitude[i] = at(demR, demC);
+            if (v < lo) lo = v;
+            if (v > hi) hi = v;
+        }
+    }
+
+    // pass 2: stretch the lambert term to the full range, then colour it
+    const span = Math.max(1e-4, hi - lo);
+    for (let i = 0; i < size * size; i++) {
+        const t = Math.min(1, Math.max(0, (shade[i] - lo) / span));
+        const lit = t * t * (3 - 2 * t);
+        const altT = Math.max(0, Math.min(1, (altitude[i] + 3000) / 7000));
+        // slope sign gives each face a faint cool/warm bias, so relief reads in
+        // greyscale without the flat "plastic" look of a pure lambert term.
+        const base = 26 + 186 * lit;
+        const idx = i * 4;
+        data[idx] = Math.round(base * (0.95 + 0.05 * altT));
+        data[idx + 1] = Math.round(base * (0.97 + 0.03 * altT));
+        data[idx + 2] = Math.round(base * (1.03 - 0.05 * altT));
+        data[idx + 3] = 255;
+    }
+
+    const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+/**
  * Textura de fracción de iluminación del mes (0 = sombra en todo el periodo, 1 = Sol continuo).
  * `frac` es la rejilla gruesa calculada en el worker (illumination.js), NO la altura del terreno.
  */

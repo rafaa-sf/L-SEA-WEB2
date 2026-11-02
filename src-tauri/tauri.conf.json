@@ -12,11 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "L-SEA Mission Operations Center",
-        "width": 800,
-        "height": 600,
+        "title": "L-SEA Lunar Site Evaluation",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1180,
+        "minHeight": 720,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "theme": "Dark"
       }
     ],
     "security": {

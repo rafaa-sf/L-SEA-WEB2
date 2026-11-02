@@ -1,42 +1,44 @@
 # ==============================================================================
-# L-SEA: GIT IGNORE CONFIGURATION
+# L-SEA - .gitignore
 # ==============================================================================
 
-# 1. Dependencias de Node.js
+# 1. Node.js dependencies
 node_modules/
 .pnp
 .pnp.js
 
-# 2. Archivos de compilación de producción (Vite / Vue)
+# 2. Production build output (Vite / Vue)
 dist/
 dist-ssr/
 *.local
 
-# 3. Datos temporales de Vercel CLI
+# 3. Temporary files (preview renders, one-off scripts)
+tmp/
+
+# 3b. Vercel CLI state (project and org ids live here; the deployment is rebuilt from source)
 .vercel/
 
-# 4. Archivos pesados de Rust / Tauri (¡Crítico! La carpeta target pesa gigas)
+# 4. Rust / Tauri build artifacts (src-tauri/target is several GB)
 src-tauri/target/
 src-tauri/Cargo.lock
 
-# 5. Archivos pesados de la NASA (LOLA DEM crudo de 145 MB)
-# GitHub rechaza cualquier archivo mayor de 100 MB
+# 5. NASA source data (raw 145 MB LOLA DEM; GitHub rejects files over 100 MB)
 ldem_80s_80m.img
 *.img
 
-# 6. Caché de Python
+# 6. Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
 env/
 
-# 7. Variables de entorno secretas (API keys, etc.)
+# 7. Secret environment files
 .env
 .env.*
 !.env.example
 
-# 8. Archivos basura de sistemas operativos y editores
+# 8. OS and editor litter
 .DS_Store
 Thumbs.db
 .vscode/*
@@ -45,4 +47,5 @@ Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
+*.sln
 graphify-out/
