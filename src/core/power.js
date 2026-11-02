@@ -21,27 +21,38 @@ export const DSN_MIN_ELEVACION = 10.0;
  * orientacion 'vertical': panel vertical girado hacia el Sol -> factor cos(elevación).
  * orientacion 'horizontal': panel plano sobre el suelo     -> factor sin(elevación).
  * Con el Sol a ~1,4° el panel horizontal produce ~40 veces menos. SUPUESTO declarado.
+ * `flujo` es la irradiancia REAL en la Luna para la fecha (varía ±3 % con la distancia);
+ * por defecto cae a la constante solar.
  */
-export function calcular_potencia_electrica(sol_visible, sol_el, area_m2 = 2.0, eficiencia = 0.29, carga_base_w = 100.0, orientacion = 'vertical') {
+export function calcular_potencia_electrica(sol_visible, sol_el, area_m2 = 2.0, eficiencia = 0.29, carga_base_w = 100.0, orientacion = 'vertical', flujo = CONSTANTE_SOLAR) {
     if (!sol_visible || sol_el <= 0) {
         return { bruta: 0.0, neta: -carga_base_w, radiacion: 0.0, orientacion };
     }
     const factor = orientacion === 'horizontal' ? Math.sin(sol_el * DEG2RAD) : Math.cos(sol_el * DEG2RAD);
-    const potencia_bruta = CONSTANTE_SOLAR * area_m2 * eficiencia * factor;
+    const potencia_bruta = flujo * area_m2 * eficiencia * factor;
     return {
         bruta: Math.round(potencia_bruta),
         neta: Math.round(potencia_bruta - carga_base_w),
-        radiacion: CONSTANTE_SOLAR,
+        radiacion: Math.round(flujo),
         orientacion
     };
 }
 
-/** Elevación REAL (topocéntrica) de la Luna sobre cada estación DSN. */
+const LUZ_KM_S = 299792.458;
+
+/** Elevación, azimut, distancia y tiempo de vuelo de ida REALES de la Luna sobre cada estación DSN. */
 export function telemetria_dsn(fechaObj) {
     const res = {};
     for (const [clave, e] of Object.entries(DSN_ESTACIONES)) {
         const m = lunaDesdeEstacion(fechaObj, e.lat, e.lon);
-        res[clave] = { nombre: e.nombre, el: Math.round(m.el * 10) / 10, az: Math.round(m.az), enlace: m.el >= DSN_MIN_ELEVACION };
+        res[clave] = {
+            nombre: e.nombre,
+            el: Math.round(m.el * 10) / 10,
+            az: Math.round(m.az),
+            km: Math.round(m.km),
+            owlt: m.km / LUZ_KM_S,
+            enlace: m.el >= DSN_MIN_ELEVACION
+        };
     }
     return res;
 }

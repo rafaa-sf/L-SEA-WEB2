@@ -2,12 +2,14 @@
 // Comprueba el núcleo físico contra valores de referencia de Skyfield + JPL DE421
 // (tests/fixtures.json) y contra casos analíticos.
 import fs from 'node:fs';
-import { calcularEfemeridesMeeus, lunaDesdeEstacion, RADIO_SOL } from '../src/core/astro.js';
+import { calcularEfemeridesMeeus, lunaDesdeEstacion, RADIO_SOL, flujoSolar, AU_KM } from '../src/core/astro.js';
 import { pixelToGeo, geoToPixel, caidaCurvatura, ROW_DIR } from '../src/core/geo.js';
 import { calculateHorizonProfile, calculateProjectedShadows, isTargetVisible, clasificarPendiente, calculateSlopeDegrees } from '../src/core/engine.js';
 import { calcular_potencia_electrica, telemetria_dsn, estacionActivaDSN } from '../src/core/power.js';
 import { calculateRadiativeEquilibrium, evaluateGlideslopeCorridor, evaluateTrnFeasibility } from '../src/core/nasa_suite.js';
 import { iluminacionMensual } from '../src/core/illumination.js';
+import { scoreDispersion, sampleEllipse, LANDING_ELLIPSE } from '../src/core/dispersion.js';
+import { advanceClock } from '../src/core/clock.js';
 import { R_LUNA, DEG2RAD, RAD2DEG } from '../src/core/geo.js';
 
 const fx = JSON.parse(fs.readFileSync(new URL('./fixtures.json', import.meta.url)));
@@ -211,6 +213,94 @@ const trnFrac = evaluateTrnFeasibility(trnRugoso, NT, NT, 40, 60.4, 60.6, 6.0);
 ok(trnFrac.score === trnRugoso6.score, `posición fraccionaria (click 3D) da el mismo score que la celda redondeada (${trnFrac.score}%)`);
 ok(evaluateTrnFeasibility(trnRugoso, NT, NT, 40, NT + 5, 60, 6).status === 'NO DATA', 'posición fuera del DEM: NO DATA, sin recortar en silencio');
 ok(evaluateTrnFeasibility(null, NT, NT, 40, 60, 60, 6).status === 'NO DATA', 'sin DEM: NO DATA explícito, no un score inventado');
+
+console.log('12) Dispersión de aterrizaje: la ellipse de contacto manda sobre la celda central');
+const ND = 61, MPC_D = 40, CENTRO = 30, PEND_MAX = 12.0;
+const rampa4 = Math.tan(4 * DEG2RAD);
+const demMeseta = new Float32Array(ND * ND);
+const demAguja = new Float32Array(ND * ND);
+for (let r = 0; r < ND; r++) {
+  for (let c = 0; c < ND; c++) {
+    const z = rampa4 * c * MPC_D;
+    demMeseta[r * ND + c] = z;
+    const d = Math.hypot(r - CENTRO, c - CENTRO);
+    // Cumbre de 4° en la celda central, con las laderas ya fuera del límite a partir de 3 celdas.
+    demAguja[r * ND + c] = z + (d >= 3 ? 25 * (d - 3) : 0);
+  }
+}
+const pendMeseta = calculateSlopeDegrees(demMeseta, ND, ND, MPC_D);
+const pendAguja = calculateSlopeDegrees(demAguja, ND, ND, MPC_D);
+const acceso = (arr) => (fila, col) => {
+  const r = Math.round(fila), c = Math.round(col);
+  if (r < 0 || r >= ND || c < 0 || c >= ND) return NaN;
+  return arr[r * ND + c];
+};
+const luz = () => 1.0;
+const meseta = scoreDispersion({ fila: CENTRO, col: CENTRO, mpc: MPC_D, maxSlope: PEND_MAX, slopeAt: acceso(pendMeseta), illumAt: luz });
+const aguja = scoreDispersion({ fila: CENTRO, col: CENTRO, mpc: MPC_D, maxSlope: PEND_MAX, slopeAt: acceso(pendAguja), illumAt: luz });
+const celdaAguja = pendAguja[CENTRO * ND + CENTRO];
+ok(Math.abs(meseta.score - 66.7) < 0.6, `meseta ancha de 4°: supervivencia ${meseta.score} (60 % · (1 − 4/12)² + 40 % · luz = 66,7)`);
+ok(celdaAguja < PEND_MAX, `la celda central de la aguja pasa la auditoría de una sola celda (${celdaAguja.toFixed(1)}° ≤ ${PEND_MAX}°)`);
+ok(aguja.score < meseta.score - 40, `pero su ellipse se hunde: ${aguja.score} frente a ${meseta.score} — mismo centro, distinta apuesta`);
+ok(aguja.coverage < 0.35 && meseta.coverage === 1, `contactos bajo el límite: aguja ${(aguja.coverage * 100).toFixed(0)} % (solo el eje corto sigue en la cumbre), meseta ${(meseta.coverage * 100).toFixed(0)} %`);
+ok(aguja.worstSlope > PEND_MAX && aguja.worstSlope > celdaAguja, `peor pendiente de la ellipse ${aguja.worstSlope}° frente a ${celdaAguja.toFixed(1)}° en el centro`);
+const meseta2 = scoreDispersion({ fila: CENTRO + 8, col: CENTRO - 6, mpc: MPC_D, maxSlope: PEND_MAX, slopeAt: acceso(pendMeseta), illumAt: luz });
+ok(Math.abs(meseta2.score - meseta.score) < 0.05, `traslación en la meseta: ${meseta2.score} = ${meseta.score} (sin depender de la celda)`);
+const samples = sampleEllipse(CENTRO, CENTRO, MPC_D, LANDING_ELLIPSE);
+const maxDr = Math.max(...samples.map((m) => Math.abs(m.fila - CENTRO))) * MPC_D;
+const maxDc = Math.max(...samples.map((m) => Math.abs(m.col - CENTRO))) * MPC_D;
+ok(samples.length === 37, `patrón de contacto: ${samples.length} muestras (centro + 3 anillos × 12 azimuts)`);
+ok(Math.abs(maxDc - LANDING_ELLIPSE.semiMajorM) <= MPC_D && Math.abs(maxDr - LANDING_ELLIPSE.semiMinorM) <= MPC_D,
+   `ellipse orientada 270°: ${maxDc.toFixed(0)} m en el semieje mayor, ${maxDr.toFixed(0)} m en el menor`);
+const rep = scoreDispersion({ fila: CENTRO, col: CENTRO, mpc: MPC_D, maxSlope: PEND_MAX, slopeAt: acceso(pendAguja), illumAt: luz });
+ok(rep.score === aguja.score, 'determinista: mismo DEM y misma posición, mismo score');
+ok(scoreDispersion({ fila: CENTRO, col: CENTRO, mpc: MPC_D, maxSlope: 0, slopeAt: acceso(pendMeseta) }) === null,
+   'sin límite de pendiente válido devuelve null, no un score inventado');
+
+// ---------- 13. DATOS REALES DE LA EFEMERIDE: DISTANCIA, FLUJO, TIEMPO DE VIAJE ----------
+console.log('\n13. Distancia real Sol-Luna, flujo solar y tiempo de ida de la senal');
+const efPeri = calcularEfemeridesMeeus(new Date('2026-01-03T00:00:00Z'), -89.9, 0);
+const efAfelio = calcularEfemeridesMeeus(new Date('2026-07-04T00:00:00Z'), -89.9, 0);
+ok(efPeri.sol_km > 1.45e8 && efPeri.sol_km < 1.53e8,
+   `distancia Sol-Luna en perihelio ${(efPeri.sol_km / 1e6).toFixed(3)} M km (1 UA = 149,598 M km)`);
+ok(efPeri.flujo > efAfelio.flujo,
+   `el flujo sigue a la distancia: ${efPeri.flujo.toFixed(1)} W/m2 en perihelio frente a ${efAfelio.flujo.toFixed(1)} en afelio`);
+ok(efPeri.flujo > 1361 && efPeri.flujo < 1415,
+   `perihelio: ${efPeri.flujo.toFixed(1)} W/m2, un 3 % por encima de la constante de folleto (1361)`);
+ok(efAfelio.flujo < 1361 && efAfelio.flujo > 1310,
+   `afelio: ${efAfelio.flujo.toFixed(1)} W/m2, un 3 % por debajo`);
+ok(Math.abs(flujoSolar(AU_KM) - 1361) < 1e-9, 'flujoSolar(1 UA) devuelve exactamente la constante solar');
+const lunaMadrid = lunaDesdeEstacion(new Date('2026-10-11T12:00:00Z'), 40.4272, -4.2481);
+ok(lunaMadrid.km > 356000 && lunaMadrid.km < 407000,
+   `distancia real Tierra-Luna desde Madrid ${Math.round(lunaMadrid.km)} km (rango 356 500 - 406 700)`);
+const dsnReal = telemetria_dsn(new Date('2026-10-11T12:00:00Z'));
+ok(Math.abs(dsnReal.Madrid.owlt - dsnReal.Madrid.km / 299792.458) < 5e-6,
+   `tiempo de ida de la senal ${dsnReal.Madrid.owlt.toFixed(3)} s (c = 299 792,458 km/s, km redondeado a 1 km)`);
+const pFlujo = calcular_potencia_electrica(true, 1.4, 2.5, 0.29, 120, 'vertical', 1400);
+const pBase = calcular_potencia_electrica(true, 1.4, 2.5, 0.29, 120, 'vertical');
+ok(pFlujo.bruta > pBase.bruta,
+   `la potencia escala con el flujo real: ${pFlujo.bruta} W con 1400 W/m2 frente a ${pBase.bruta} W con 1361`);
+
+// ---------- 14. RELOJ DEL PLANIFICADOR: ESCALA Y CAMBIO DE DIA ----------
+console.log('\n14. Reloj del planificador: 1x, 60x, 3600x y cambio de dia');
+const t1 = advanceClock(12, 0, 1, 1);
+ok(t1.hour === 12 && Math.abs(t1.second - 1) < 1e-9 && t1.dayShift === 0,
+   'a 1x, un segundo real equivale a un segundo simulado');
+const t60 = advanceClock(12, 0, 1, 60);
+ok(t60.hour === 12 && Math.abs(t60.second - 60) < 1e-9,
+   `a 60x, un segundo real son ${t60.second.toFixed(0)} s simulados (un minuto por segundo)`);
+const t3600 = advanceClock(12, 0, 1, 3600);
+ok(t3600.hour === 13 && t3600.second === 0,
+   'a 3600x, un segundo real es una hora simulada: el reloj avanza en vez de quedarse clavado');
+const rollover = advanceClock(23, 0, 3600, 1);
+ok(rollover.hour === 0 && rollover.dayShift === 1,
+   'al cruzar de 23:00 a 00:00 incrementa el dia simulado');
+const multi = advanceClock(10, 0, 5, 3600);
+ok(multi.hour === 15 && multi.dayShift === 0,
+   'cinco horas de golpe: 10:00 pasa a 15:00 sin perder el dia');
+const frozen = advanceClock(12, 30, 0, 3600);
+ok(frozen.hour === 12 && frozen.second === 30,
+   'sin tiempo transcurrido el reloj no se mueve (dt = 0)');
 
 console.log(fallos === 0 ? '\nTODO OK' : `\n${fallos} FALLO(S)`);
 process.exit(fallos === 0 ? 0 : 1);
